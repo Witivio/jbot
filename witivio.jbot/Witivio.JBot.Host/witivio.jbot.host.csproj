@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\witivio.jbot.core\Witivio.JBot.Core.csproj" />
+    <ProjectReference Include="..\Witivio.JBot.Core\Witivio.JBot.Core.csproj" />
   </ItemGroup>
 
 </Project>

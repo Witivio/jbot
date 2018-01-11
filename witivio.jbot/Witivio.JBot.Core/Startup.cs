@@ -95,7 +95,7 @@ namespace Witivio.JBot.Core
 
             app.Run((context) =>
             {
-                var welcome = new StringBuilder("Welcome to S4Bot Connector by Witivio.");
+                var welcome = new StringBuilder("Welcome to Jabber Bot Connector by Witivio.");
                 welcome.AppendLine();
                 welcome.AppendLine($"Version: {Assembly.GetEntryAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion}");
 

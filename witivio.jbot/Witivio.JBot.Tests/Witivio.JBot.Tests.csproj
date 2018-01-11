@@ -8,8 +8,8 @@
     <ProjectGuid>{57F352A0-E96D-4AFA-A1C4-9A3A2A7666E6}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>witivio.jbot.tests</RootNamespace>
-    <AssemblyName>witivio.jbot.tests</AssemblyName>
+    <RootNamespace>Witivio.JBot.Tests</RootNamespace>
+    <AssemblyName>Witivio.JBot.Tests</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{3AC096D0-A1C2-E12C-1390-A8335801FDAB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
@@ -64,7 +64,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\witivio.jbot.core\Witivio.JBot.Core.csproj">
+    <ProjectReference Include="..\Witivio.JBot.Core\Witivio.JBot.Core.csproj">
       <Project>{52d3ab51-6e2a-42af-bfde-5e87098175b5}</Project>
       <Name>Witivio.JBot.Core</Name>
     </ProjectReference>

@@ -5,10 +5,10 @@ EXPOSE 80
 FROM microsoft/aspnetcore-build:2.0-nanoserver-1709 AS build
 WORKDIR /src
 COPY *.sln ./
-COPY witivio.jbot.host/witivio.jbot.host.csproj witivio.jbot.host/
+COPY Witivio.JBot.Host/Witivio.JBot.Host.csproj Witivio.JBot.Host/
 RUN dotnet restore
 COPY . .
-WORKDIR /src/witivio.jbot.host
+WORKDIR /src/Witivio.JBot.Host
 RUN dotnet build -c Release -o /app
 
 FROM build AS publish
@@ -17,4 +17,4 @@ RUN dotnet publish -c Release -o /app
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app .
-ENTRYPOINT ["dotnet", "witivio.jbot.host.dll"]
+ENTRYPOINT ["dotnet", "Witivio.JBot.Host.dll"]

@@ -1,7 +1,7 @@
 version: '3'
 
 services:
-  witivio.jbot.host:
+  Witivio.JBot.Host:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
     ports:
