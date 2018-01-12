@@ -2,6 +2,8 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Microsoft.Bot.Connector.DirectLine;
+using System.Linq;
 
 namespace Witivio.JBot.Core.Services
 {
