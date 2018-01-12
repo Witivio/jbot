@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using Witivio.JBot.Core.Models;
+using Witivio.JBot.Core.Services;
 
 namespace Witivio.JBot.Core.Ioc
 {
@@ -20,8 +21,8 @@ namespace Witivio.JBot.Core.Ioc
             builder.RegisterAssemblyTypes(this.ThisAssembly)
                 .AsImplementedInterfaces()
                 .SingleInstance();
-
            
+            builder.RegisterType<JabberClient>().AsImplementedInterfaces().InstancePerRequest();
             base.Load(builder);
         }
     }

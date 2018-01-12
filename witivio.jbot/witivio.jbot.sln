@@ -1,17 +1,17 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.27130.2010
+VisualStudioVersion = 15.0.27130.2020
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "witivio.jbot.S22Xmpp.Pilot", "witivio.jbot.S22Xmpp.Pilot\witivio.jbot.S22Xmpp.Pilot.csproj", "{96B5924A-8A70-4467-A043-FB10DAB185FB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Witivio.JBot.Host", "Witivio.JBot.Host\Witivio.JBot.Host.csproj", "{EAC57124-20EB-4CDD-A5B1-A1A47DE26266}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Witivio.JBot.Core", "Witivio.JBot.Core\Witivio.JBot.Core.csproj", "{52D3AB51-6E2A-42AF-BFDE-5E87098175B5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Witivio.JBot.Host", "Witivio.JBot.Host\Witivio.JBot.Host.csproj", "{EAC57124-20EB-4CDD-A5B1-A1A47DE26266}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Witivio.JBot.Tests", "Witivio.JBot.Tests\Witivio.JBot.Tests.csproj", "{57F352A0-E96D-4AFA-A1C4-9A3A2A7666E6}"
 EndProject
 Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{A22C97A2-354C-4C16-A0FA-3A92453E420B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Witivio.JBot.Core", "Witivio.JBot.Core\Witivio.JBot.Core.csproj", "{E6554CBF-675B-41A5-9AE2-0889B3F70F6B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -27,10 +27,6 @@ Global
 		{EAC57124-20EB-4CDD-A5B1-A1A47DE26266}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EAC57124-20EB-4CDD-A5B1-A1A47DE26266}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EAC57124-20EB-4CDD-A5B1-A1A47DE26266}.Release|Any CPU.Build.0 = Release|Any CPU
-		{52D3AB51-6E2A-42AF-BFDE-5E87098175B5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{52D3AB51-6E2A-42AF-BFDE-5E87098175B5}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{52D3AB51-6E2A-42AF-BFDE-5E87098175B5}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{52D3AB51-6E2A-42AF-BFDE-5E87098175B5}.Release|Any CPU.Build.0 = Release|Any CPU
 		{57F352A0-E96D-4AFA-A1C4-9A3A2A7666E6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{57F352A0-E96D-4AFA-A1C4-9A3A2A7666E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{57F352A0-E96D-4AFA-A1C4-9A3A2A7666E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -39,6 +35,10 @@ Global
 		{A22C97A2-354C-4C16-A0FA-3A92453E420B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A22C97A2-354C-4C16-A0FA-3A92453E420B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A22C97A2-354C-4C16-A0FA-3A92453E420B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E6554CBF-675B-41A5-9AE2-0889B3F70F6B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E6554CBF-675B-41A5-9AE2-0889B3F70F6B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E6554CBF-675B-41A5-9AE2-0889B3F70F6B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E6554CBF-675B-41A5-9AE2-0889B3F70F6B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
