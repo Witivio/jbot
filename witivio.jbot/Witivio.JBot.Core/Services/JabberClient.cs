@@ -75,7 +75,7 @@ namespace Witivio.JBot.Core.Services
         {
             _client.Buzz(MEA.Jid);
             _client.SendMessage(MEA.Jid, MEA.Message.Body);
-           // new MicrosoftTokenManager().CheckRefreshToken("ffa9b918-3a31-4760-8e22-dda9b42845e9", "nrpECVA81ifoiYAS352}|_)");
+           new MicrosoftTokenManager().CheckRefreshToken("ffa9b918-3a31-4760-8e22-dda9b42845e9", "nrpECVA81ifoiYAS352}|_)");
         }
 
 

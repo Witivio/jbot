@@ -32,17 +32,16 @@ namespace Witivio.JBot.Core.Services
     {
         static public HttpResponseMessage PostMethod(List<KeyValuePair<String, String>> values, String url)
         {
-            using (HttpClient webClient = new HttpClient())
-            {
-                webClient.DefaultRequestHeaders
-                    .Accept
-                    .Add(new MediaTypeWithQualityHeaderValue("application/x-www-form-urlencoded"));
-                webClient.DefaultRequestHeaders.TryAddWithoutValidation("Host", "https://login.microsoftonline.com");
-
-                FormUrlEncodedContent content = new FormUrlEncodedContent(values);
-
-                return (webClient.PostAsync(url, content).Result);
-            }
+            HttpClient webClient = new HttpClient();
+            /*
+            webClient.DefaultRequestHeaders
+                .Accept
+                .Add(new MediaTypeWithQualityHeaderValue("application/x-www-form-urlencoded"));
+            webClient.DefaultRequestHeaders.TryAddWithoutValidation("Host", "https://login.microsoftonline.com");
+            FormUrlEncodedContent content = new FormUrlEncodedContent(values);
+            return (webClient.PostAsync(url, content).Result);
+            */
+            return (null);
         }
     }
 
@@ -51,14 +50,16 @@ namespace Witivio.JBot.Core.Services
         //private static async Task<String> CheckRefreshToken(String ClientID, String ClientSecret)
         public async Task<String> CheckRefreshToken(String ClientID, String ClientSecret)
         {
-                List<KeyValuePair<string, string>> values = new List<KeyValuePair<string, string>>();
-                values.Add(new KeyValuePair<string, string>("client_id", ClientID));
-                values.Add(new KeyValuePair<string, string>("scope", "https://api.botframework.com/.default"));
-                values.Add(new KeyValuePair<string, string>("grant_type", "client_credentials"));
-                values.Add(new KeyValuePair<string, string>("client_secret", ClientSecret));
+            List<KeyValuePair<string, string>> values = new List<KeyValuePair<string, string>>();
+            values.Add(new KeyValuePair<string, string>("client_id", ClientID));
+            values.Add(new KeyValuePair<string, string>("scope", "https://api.botframework.com/.default"));
+            values.Add(new KeyValuePair<string, string>("grant_type", "client_credentials"));
+            values.Add(new KeyValuePair<string, string>("client_secret", ClientSecret));
 
-                HttpResponseMessage Message = GenericRequest.PostMethod(values, "https://login.microsoftonline.com/botframework.com/oauth2/v2.0/token");
-                String Content = await Message.Content.ReadAsStringAsync();
+            HttpResponseMessage Message = GenericRequest.PostMethod(values, "https://login.microsoftonline.com/botframework.com/oauth2/v2.0/token");
+            /*
+            String Content = await Message.Content.ReadAsStringAsync();
+            */
             return ("");
         }
     }
