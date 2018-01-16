@@ -28,22 +28,16 @@ namespace Witivio.JBot.Core.Services
 
     public class JabberClient : IJabberClient
     {
-        String _host;
-        String _user;
-        String _password;
-        String _port;
+        private XmppServerCredential _credentials;
         XmppClient _client;
 
-        public JabberClient(ServerModelCredential MyCredential)
+        public JabberClient(XmppServerCredential MyCredential)
         {
-            _host = MyCredential.Host;
-            _user = MyCredential.User;
-            _password = MyCredential.Password;
-            _port = MyCredential.Port;
-            int port = Int32.Parse(_port);
-            _client = new XmppClient(_host, port, true);
-            _client.Username = _user;
-            _client.Password = _password;
+            _credentials = MyCredential;
+            int port = Int32.Parse(_credentials.Port);
+            _client = new XmppClient(_credentials.Host, port, true);
+            _client.Username = _credentials.User;
+            _client.Password = _credentials.Password;
         }
 
         public void NewMessage(object sender, MessageEventArgs e)
@@ -52,6 +46,9 @@ namespace Witivio.JBot.Core.Services
             _client.AddContact(e.Jid.Node + "@" + e.Jid.Domain);
             MessageEventArgs newmessage = new MessageEventArgs(e.Jid, ToSendMsg);
             this.PostAsync(newmessage);
+            // TDC : Passe par des event pour faire remonter l'information dans le communication linker.
+            // inspire toi de l'existant sur le S4B
+            // ne t'embete pas a recuperer des Tokens le directlineclient le fait pour toi dans le communication linker.
         }
 
         public void PersistantStatus(object sender, StatusEventArgs e)
@@ -62,6 +59,7 @@ namespace Witivio.JBot.Core.Services
         public Task<Availability> GetPresence(string jid)
         {
             StatusEventArgs e = new StatusEventArgs(jid, null);
+            
             return (Task.FromResult(e.Status.Availability));
         }
 
@@ -75,7 +73,8 @@ namespace Witivio.JBot.Core.Services
         {
             _client.Buzz(MEA.Jid);
             _client.SendMessage(MEA.Jid, MEA.Message.Body);
-           new MicrosoftTokenManager().CheckRefreshToken("ffa9b918-3a31-4760-8e22-dda9b42845e9", "nrpECVA81ifoiYAS352}|_)");
+
+           //new MicrosoftTokenManager().CheckRefreshToken("ffa9b918-3a31-4760-8e22-dda9b42845e9", "nrpECVA81ifoiYAS352}|_)");
         }
 
 
