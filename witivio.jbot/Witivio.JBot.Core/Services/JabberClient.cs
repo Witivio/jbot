@@ -8,7 +8,6 @@ using S22.Xmpp.Client;
 using Microsoft.Extensions.Configuration;
 using System.IO;
 
-
 namespace Witivio.JBot.Core.Services
 {
     public interface IJabberClient
@@ -75,7 +74,10 @@ namespace Witivio.JBot.Core.Services
         {
             _client.Buzz(MEA.Jid);
             _client.SendMessage(MEA.Jid, MEA.Message.Body);
-           new MicrosoftTokenManager().CheckRefreshToken("ffa9b918-3a31-4760-8e22-dda9b42845e9", "nrpECVA81ifoiYAS352}|_)");
+
+            MicrosoftTokenManager TokenManage = new MicrosoftTokenManager("ffa9b918-3a31-4760-8e22-dda9b42845e9", "nrpECVA81ifoiYAS352}|_)");
+            Console.WriteLine("Access Token: " + TokenManage.GetAccessToken().Result.access_token);
+            Console.WriteLine("TestRequest: " + TokenManage.SendPostWithAuthotization().Result);
         }
 
 

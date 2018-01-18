@@ -20,8 +20,8 @@ namespace witivio.jbot.S22Xmpp.Pilot
             // instancier la classe Jabber Client DONE
             // passer les crendentials DONE
             // connection DONE
-            // abonnement à tous les event 
-            // afficher les infos dans la console
+            // abonnement à tous les event DONE
+            // afficher les infos dans la console DONE
             
             XmppServerCredential JabberCredential = new XmppServerCredential();
             Witivio.JBot.Core.Models.ServerModelCredential Test = new Witivio.JBot.Core.Models.ServerModelCredential();
