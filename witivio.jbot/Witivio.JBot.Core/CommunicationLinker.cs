@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.Bot.Connector.DirectLine;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -11,11 +12,20 @@ namespace Witivio.JBot.Core
     public interface ICommunicationLinker : IDisposable
     {
         void Start();
-        Error GetError();
+        JBotError GetError();
     }
 
     public class CommunicationLinker : ErrorProvider, ICommunicationLinker
     {
+        public CommunicationLinker(IDirectLineClient directLineClient, JabberClient jabberClient)
+        {
+            _directLineClient = directLineClient;
+            _jabberClient = jabberClient;
+        }
+
+        private IDirectLineClient _directLineClient { get; }
+        private IJabberClient _jabberClient { get; }
+
         public void Dispose()
         {
             throw new NotImplementedException();
@@ -23,7 +33,22 @@ namespace Witivio.JBot.Core
 
         public void Start()
         {
-            throw new NotImplementedException();
+            try
+            {
+                //_jabberClient.NewConversation += ClientOnNewConversation;
+                //_jabberClient.NewMessage += ClientOnMessageReceived;
+                //_jabberClient.ConversationEnded += ConversationEnded;
+                //_jabberClient.ProactiveConversation += ProactiveConversation;
+                //_jabberClient.AskANewConversation += StartNewDirectLineConversation;
+
+                _jabberClient.Start();
+                _jabberClient.SetPresence(true);
+
+            }
+            catch (Exception e)
+            {
+                SetError(e);
+            }
         }
     }
 }

@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Witivio.JBot.Core.Models
 {
-    public class Error
+    public class JBotError
     {
         public DateTime Date { get; set; }
         public Exception Exception { get; set; }
@@ -12,15 +12,15 @@ namespace Witivio.JBot.Core.Models
 
     public abstract class ErrorProvider
     {
-        private Error _error;
-        public Error GetError()
+        private JBotError _error;
+        public JBotError GetError()
         {
             return _error;
         }
 
         protected void SetError(Exception error)
         {
-            _error = new Error { Date = DateTime.UtcNow, Exception = error };
+            _error = new JBotError { Date = DateTime.UtcNow, Exception = error };
         }
     }
 }

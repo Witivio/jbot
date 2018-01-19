@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Witivio.JBot.Core.Models
 {
-    public class ServerModelCredential
+    public class XmppServerCredential
     {
         public String Host { get; set; }
         public String User { get; set; }

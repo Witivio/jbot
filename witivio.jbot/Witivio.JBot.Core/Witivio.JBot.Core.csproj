@@ -30,7 +30,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Autofac" Version="4.6.2" />
     <PackageReference Include="Microsoft.Bot.Connector.DirectLine" Version="3.0.2" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="2.0.0" />
@@ -60,13 +59,14 @@
     <Compile Include="Infrastructure\Configuration.cs" />
     <Compile Include="Infrastructure\ConfigurationKeys.cs" />
     <Compile Include="Infrastructure\RetryPolicies.cs" />
-    <Compile Include="Ioc\JBotModule.cs" />
+    <Compile Include="Jbot.cs" />
     <Compile Include="Models\Error.cs" />
     <Compile Include="Models\MessageFormat.cs" />
     <Compile Include="Models\RuntimeMode.cs" />
+    <Compile Include="Models\Settings.cs" />
     <Compile Include="Models\UserPresence.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SerializationClass.cs" />
+    <Compile Include="Services\BotndoConnectorClient.cs" />
     <Compile Include="Services\ConversationParameters.cs" />
     <Compile Include="Services\Datastore.cs" />
     <Compile Include="Services\JabberClient.cs" />
