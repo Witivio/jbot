@@ -18,15 +18,23 @@ namespace Witivio.JBot.Core
 
         public void Configure(RuntimeMode mode)
         {
-            var file = File.ReadAllText("appSettings.json");
+            var file = File.ReadAllText("appsettings.json");
             Settings = JsonConvert.DeserializeObject<JBotSettings>(file);
+
             if (string.IsNullOrEmpty(Settings.Credentials.DirectLineKey))
                 throw new ArgumentNullException("missing directline key in configuration file");
-            if (Settings.Credentials.DirectLineKey == null)
+            if (string.IsNullOrEmpty(Settings.Credentials.BotId))
+                throw new ArgumentNullException("missing bot id in configuration file");
+            if (Settings.Credentials.XmppCredentials == null
+                || string.IsNullOrEmpty(Settings.Credentials.XmppCredentials.Host)
+                || string.IsNullOrEmpty(Settings.Credentials.XmppCredentials.User)
+                || string.IsNullOrEmpty(Settings.Credentials.XmppCredentials.Password)
+                || string.IsNullOrEmpty(Settings.Credentials.XmppCredentials.Port))
                 throw new ArgumentNullException("missing XMPP credentials in configuration file");
-
             _communicationLinker = new CommunicationLinker(new DirectLineClient(Settings.Credentials.DirectLineKey),
-                new JabberClient(Settings.Credentials.XmppCredentials));
+               new InMemoryDataStore(), new MessageFormater(),
+               new JabberClient(Settings.Credentials.XmppCredentials, new InMemoryDataStore()), Settings.Credentials.BotId);
+            //public CommunicationLinker(IDirectLineClient directLineClient, IConversationDataStore conversationsStates, IMessageFormater messageFormater, JabberClient jabberClient)
         }
         public void Start()
         {

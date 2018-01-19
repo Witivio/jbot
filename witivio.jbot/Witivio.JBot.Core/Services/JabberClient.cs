@@ -7,19 +7,31 @@ using System;
 using S22.Xmpp.Client;
 using Microsoft.Extensions.Configuration;
 using System.IO;
-
+using Witivio.JBot.Core.Services.EventArgs;
+using System.Linq;
+using System.Threading;
+using System.Collections.Concurrent;
+using System.Net.Http;
+using Newtonsoft.Json;
+using System.Text;
+using System.Net.Mime;
+using Witivio.JBot.Core.Infrastructure;
 
 namespace Witivio.JBot.Core.Services
 {
     public interface IJabberClient
     {
-        void NewMessage(object sender, MessageEventArgs e);
-        void PersistantStatus(object sender, StatusEventArgs e);
+        event EventHandler<NewConversationEventArgs> NewMessage;
+        event EventHandler<NewConversationEventArgs> NewConversation;
+        event EventHandler<StatusEventArgs> StatusChanged;
+        event EventHandler<ConversationEventArgs> ConversationEnded;
+        event EventHandler<ProActiveConversationEventArgs> ProactiveConversation;
+        event Func<Task<Microsoft.Bot.Connector.DirectLine.Conversation>> AskANewConversation;
+
 
         Task Start();
         void Stop();
-        void PostAsync(MessageEventArgs MEA);
-        Task PostAsync(string JId, string message, MessageFormat format = MessageFormat.Text);
+        Task PostAsync(string convId, string message, MessageFormat format = MessageFormat.Text);
         void SetPresence(bool isOnline);
         Task<string> StartNewConversation(ConversationParameters conversationParameters);
         Task<Availability> GetPresence(string email);
@@ -28,58 +40,88 @@ namespace Witivio.JBot.Core.Services
 
     public class JabberClient : IJabberClient
     {
+        public event EventHandler<NewConversationEventArgs> NewMessage;
+        public event EventHandler<NewConversationEventArgs> NewConversation;
+        public event EventHandler<StatusEventArgs> StatusChanged;
+        public event EventHandler<ConversationEventArgs> ConversationEnded;
+        public event EventHandler<ProActiveConversationEventArgs> ProactiveConversation;
+        public event Func<Task<Microsoft.Bot.Connector.DirectLine.Conversation>> AskANewConversation;
+
+
+        private ConcurrentDictionary<string, ProactiveConversation> proactiveConversationStack;
+        private CancellationTokenSource _stopCancellationToken;
         private XmppServerCredential _credentials;
+        private IPersistantDataStore _applicationDataStore;
+
         XmppClient _client;
 
-        public JabberClient(XmppServerCredential MyCredential)
+        public JabberClient(XmppServerCredential MyCredential, IPersistantDataStore applicationDataStore)
         {
+            _applicationDataStore = applicationDataStore;
+
             _credentials = MyCredential;
             int port = Int32.Parse(_credentials.Port);
             _client = new XmppClient(_credentials.Host, port, true);
             _client.Username = _credentials.User;
             _client.Password = _credentials.Password;
+            _client.StatusChanged += PersistantStatus;
+            _client.Message += JBNewMessage;
+            proactiveConversationStack = new ConcurrentDictionary<string, ProactiveConversation>();
         }
 
-        public void NewMessage(object sender, MessageEventArgs e)
+        private async Task<string> findjabberclientid(String mail)
         {
-            Message ToSendMsg = new Message(e.Jid, "Le robot vous renvoie votre texte: " + e.Message.Body);
-            _client.AddContact(e.Jid.Node + "@" + e.Jid.Domain);
-            MessageEventArgs newmessage = new MessageEventArgs(e.Jid, ToSendMsg);
-            this.PostAsync(newmessage);
-            // TDC : Passe par des event pour faire remonter l'information dans le communication linker.
-            // inspire toi de l'existant sur le S4B
-            // ne t'embete pas a recuperer des Tokens le directlineclient le fait pour toi dans le communication linker.
+            JidWithConvId res = await _applicationDataStore.GetValueAsync<JidWithConvId>(mail);
+            if (res != null && res.Jid != null && mail == res.Jid.ToEmail())
+                return (res.convid);
+            return ("");
+        }
+
+        public async void JBNewMessage(object sender, S22.Xmpp.Im.MessageEventArgs e)
+        {
+            String Id = await findjabberclientid(e.Message.To.ToEmail());
+            if (Id != "")
+            {
+                NewMessage?.Invoke(this, new NewConversationEventArgs(new User { Email = e.Message.From.ToEmail(), DisplayName = e.Message.From.Node },
+                    new User { Email = e.Message.To.ToEmail(), DisplayName = e.Message.To.Node },
+                    e.Message.Body, Id));
+            }
+            else
+            {
+                AddContact(e.Message.From.Domain, e.Message.From.Node);
+                var directLineConversation = await AskANewConversation?.Invoke();
+                await _applicationDataStore.TryAddOrUpdateAsync<JidWithConvId>(e.Message.To.ToEmail(), new JidWithConvId { convid = directLineConversation.ConversationId, Jid = e.Message.To });
+                NewConversation?.Invoke(this, new NewConversationEventArgs(new User { Email = e.Message.From.ToEmail(), DisplayName = e.Message.From.Node },
+                    new User { Email = e.Message.To.ToEmail(), DisplayName = e.Message.To.Node },
+                    e.Message.Body, directLineConversation.ConversationId));
+            }
+            /*
+                ConversationEnded?.Invoke(this, new NewConversationEventArgs(new User { Email = e.Message.From.ToEmail(), DisplayName = e.Message.From.Node },
+                    new User { Email = e.Message.To.ToEmail(), DisplayName = e.Message.To.Node },
+                    e.Message.Body, directLineConversation.ConversationId));
+            */
+        }
+
+        private void AddContact(String domain, String node)
+        {
+            _client.AddContact(new S22.Xmpp.Jid(domain, node));
         }
 
         public void PersistantStatus(object sender, StatusEventArgs e)
         {
-            _client.SetStatus(S22.Xmpp.Im.Availability.Chat);
+            StatusChanged?.Invoke(this, e);
         }
 
         public Task<Availability> GetPresence(string jid)
         {
-            StatusEventArgs e = new StatusEventArgs(jid, null);
+            StatusEventArgs e = new StatusEventArgs(new S22.Xmpp.Jid(jid), null);
             
             return (Task.FromResult(e.Status.Availability));
         }
 
         public Task IsTypingAsync(string key)
         {
-            throw new System.NotImplementedException();
-        }
-
-
-        public void PostAsync(MessageEventArgs MEA)
-        {
-            _client.Buzz(MEA.Jid);
-            _client.SendMessage(MEA.Jid, MEA.Message.Body);
-
-           //new MicrosoftTokenManager().CheckRefreshToken("ffa9b918-3a31-4760-8e22-dda9b42845e9", "nrpECVA81ifoiYAS352}|_)");
-        }
-
-
-        public Task PostAsync(string JID, string message, MessageFormat format = MessageFormat.Text)
-        {
+            //await _communicator.SetIsTyping(S4BConversationId.Format(conversationId));
             throw new System.NotImplementedException();
         }
 
@@ -96,17 +138,41 @@ namespace Witivio.JBot.Core.Services
             _client.Connect();
             if (_client.Connected == false)
                 this.Start();
-            _client.SetAvatar("../../../../Resource/bot.jpg");
-            _client.SetStatus(S22.Xmpp.Im.Availability.Chat);
-            _client.Message += NewMessage;
-            _client.StatusChanged += PersistantStatus;
-            Console.WriteLine("Connected as " + _client.Jid + Environment.NewLine);
+            SetPresence(true);
+            //_eventTask = Task.Run(() => ListenEvents(), _stopCancellationToken.Token);
+            _stopCancellationToken = new CancellationTokenSource();
             return (Task.FromResult<object>(null));
         }
 
-        public Task<string> StartNewConversation(ConversationParameters conversationParameters)
+        public async Task<string> StartNewConversation(ConversationParameters conversationParameters)
         {
-            throw new System.NotImplementedException();
+            if (conversationParameters == null) throw new ArgumentNullException(nameof(conversationParameters));
+            if (conversationParameters.Members != null)
+            {
+                if (!conversationParameters.IsGroup.GetValueOrDefault())
+                {
+                    string to = conversationParameters.Members.First().Id;
+
+                    var presence = await this.GetPresence("");
+                    if (presence == S22.Xmpp.Im.Availability.Online || presence == S22.Xmpp.Im.Availability.ExtendedAway || presence == S22.Xmpp.Im.Availability.Chat)
+                    {
+                        if (string.IsNullOrEmpty(conversationParameters.Activity.Id))
+                            conversationParameters.Activity.Id = Guid.NewGuid().ToString();
+
+                        var directLineConversation = await this.AskANewConversation?.Invoke();
+                        proactiveConversationStack.TryAdd(conversationParameters.Activity.Id, new ProactiveConversation { Activity = conversationParameters.Activity, DirectLineConversation = directLineConversation });
+                        //start message await _client.StartMessaging(to, conversationParameters.Activity.Id);
+                        return directLineConversation.ConversationId;
+                    }
+                }
+                throw new NotSupportedException("Group message is not supported yet");
+            }
+            throw new ArgumentNullException("conversationParameters.Members");
+        }
+
+        public async Task PostAsync(string ToUser, string message, MessageFormat format = MessageFormat.Text)
+        {
+            _client.SendMessage(ToUser, message);
         }
 
         public void Stop()
@@ -115,15 +181,3 @@ namespace Witivio.JBot.Core.Services
         }
     }
 }
-
-/*
-        //event EventHandler<MessageEventArgs> NewMessage;
-    NewMessage?.Invoke(this, new MessageEventArgs
-    {
-        ConversationId = S4BConversationId.Extract(incommingMessage.ConversationId),
-        Message = incommingMessage.Message,
-        From = incommingMessage.From
-    });
-    _client.StatusChanged += PersistantStatus;
-    //PersistantStatus;
-*/

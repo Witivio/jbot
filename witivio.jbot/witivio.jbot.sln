@@ -1,10 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.27130.2020
+VisualStudioVersion = 15.0.27130.2024
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "witivio.jbot.S22Xmpp.Pilot", "witivio.jbot.S22Xmpp.Pilot\witivio.jbot.S22Xmpp.Pilot.csproj", "{96B5924A-8A70-4467-A043-FB10DAB185FB}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Witivio.JBot.Tests", "Witivio.JBot.Tests\Witivio.JBot.Tests.csproj", "{57F352A0-E96D-4AFA-A1C4-9A3A2A7666E6}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Witivio.JBot.Core", "Witivio.JBot.Core\Witivio.JBot.Core.csproj", "{E6554CBF-675B-41A5-9AE2-0889B3F70F6B}"
@@ -17,10 +15,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{96B5924A-8A70-4467-A043-FB10DAB185FB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{96B5924A-8A70-4467-A043-FB10DAB185FB}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{96B5924A-8A70-4467-A043-FB10DAB185FB}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{96B5924A-8A70-4467-A043-FB10DAB185FB}.Release|Any CPU.Build.0 = Release|Any CPU
 		{57F352A0-E96D-4AFA-A1C4-9A3A2A7666E6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{57F352A0-E96D-4AFA-A1C4-9A3A2A7666E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{57F352A0-E96D-4AFA-A1C4-9A3A2A7666E6}.Release|Any CPU.ActiveCfg = Release|Any CPU

@@ -22,6 +22,8 @@ namespace Witivio.JBot.Core.Models
     public class Credentials
     {
         public string DirectLineKey { get; set; }
+        [JsonProperty("BotIdProvider")]
+        public string BotId { get; set; }
         [JsonProperty("Xmpp")]
         public XmppServerCredential XmppCredentials { get; set; }
     }
