@@ -17,6 +17,10 @@ using System.Text;
 using System.Net.Mime;
 using Witivio.JBot.Core.Infrastructure;
 
+
+using Witivio.JBot.Core.Models.ProActive.Listener;
+using Witivio.JBot.Core.Services.Botndo.S4Bot.Core.UCWA;
+
 namespace Witivio.JBot.Core.Services
 {
     public interface IJabberClient
@@ -52,20 +56,42 @@ namespace Witivio.JBot.Core.Services
         private CancellationTokenSource _stopCancellationToken;
         private XmppServerCredential _credentials;
         private IPersistantDataStore _applicationDataStore;
+        private XmppClient _client;
+        private EventProcessor _eventProcessor;
+        private ConcurrentDictionary<string, MessagingInvitation> _tempIncommingMessageToFireIfMessageDoesNotCome;
 
-        XmppClient _client;
 
-        public JabberClient(XmppServerCredential MyCredential, IPersistantDataStore applicationDataStore)
+        private String _botId;
+
+
+        private Task _eventTask;
+        private IUCWACommunicator _com;
+
+        public JabberClient(IAuth MyCredential, IPersistantDataStore applicationDataStore, String BotId, IUCWACommunicator com)
         {
             _applicationDataStore = applicationDataStore;
 
-            _credentials = MyCredential;
-            int port = Int32.Parse(_credentials.Port);
-            _client = new XmppClient(_credentials.Host, port, true);
-            _client.Username = _credentials.User;
-            _client.Password = _credentials.Password;
+            _credentials = JsonConvert.DeserializeObject<XmppServerCredential>(MyCredential.getCredential());
+            try
+            {
+                _client = new XmppClient(_credentials.Host, ConversionClass.stringToInt(_credentials.Port, true), ConversionClass.stringToBool(_credentials.Tls, true))
+                {
+                    Username = _credentials.User,
+                    Password = _credentials.Password,
+                };
+            }
+            catch (Exception e)
+            {
+                //TODO debug
+                Console.WriteLine(e.Message);
+                System.Environment.Exit(1);
+            }
             _client.StatusChanged += PersistantStatus;
             _client.Message += JBNewMessage;
+
+            _botId = BotId;
+            _com = com;
+            _eventProcessor = new EventProcessor();
             proactiveConversationStack = new ConcurrentDictionary<string, ProactiveConversation>();
         }
 
@@ -104,25 +130,104 @@ namespace Witivio.JBot.Core.Services
 
         private void AddContact(String domain, String node)
         {
-            _client.AddContact(new S22.Xmpp.Jid(domain, node));
+            try
+            {
+                _client.AddContact(new S22.Xmpp.Jid(domain, node));
+            }
+            catch (Exception e)
+            {
+                //TODO debug
+                return;
+            }
         }
 
         public void PersistantStatus(object sender, StatusEventArgs e)
         {
-            StatusChanged?.Invoke(this, e);
+            if (e.Status.Availability != S22.Xmpp.Im.Availability.Online)
+                StatusChanged?.Invoke(this, e);
         }
 
-        public Task<Availability> GetPresence(string jid)
+        public Task Start()
         {
-            StatusEventArgs e = new StatusEventArgs(new S22.Xmpp.Jid(jid), null);
-            
-            return (Task.FromResult(e.Status.Availability));
+            try
+            {
+                _client.Connect();
+            }
+            catch (Exception e)
+            {
+                //TODO debug
+                return (Task.FromResult<object>(null));
+            }
+            if (_client.Connected == false)
+                this.Start();
+            SetPresence(true);
+            _stopCancellationToken = new CancellationTokenSource();
+            //_eventTask = Task.Run(() => ListenEvents(), _stopCancellationToken.Token); // TODO check pour proactivité
+            return (Task.FromResult<object>(null));
+        }
+
+        private string GetNextUrlDataStoreKey()
+        {
+            return "eventLink_" + _com.ApplicationId;
+        }
+
+        private async Task<EventResponse> GetEventAndSaveNextUrl()
+        {
+            string key = GetNextUrlDataStoreKey();
+            var eventLinkValue = await _applicationDataStore.GetValueAsync<string>(key);
+
+            EventResponse eventResponse = null;
+            if (string.IsNullOrWhiteSpace(eventLinkValue))
+                eventResponse = await _com.GetEvents(_stopCancellationToken.Token);
+            else
+                eventResponse = await _com.GetEvents(_stopCancellationToken.Token, eventLinkValue);
+
+            if (eventResponse != null)
+            {
+                await _applicationDataStore.TryAddOrUpdateAsync(key, eventResponse.Links.Next.Href);
+            }
+            return eventResponse;
+        }
+
+        private async Task SendCallbackResponse(ProactiveConversation messageToSend, ProActiveMessageResult result)
+        {
+            if (!string.IsNullOrWhiteSpace(messageToSend.Activity.ServiceUrl))
+            {
+                using (var client = new HttpClient())
+                {
+                    var response = new ProActiveMessageResponse();
+                    response.ActivityId = messageToSend.Activity.Id;
+                    response.BotId = _botId;
+                    response.Result = result;
+                    await client.PostAsync(messageToSend.Activity.ServiceUrl, new StringContent(JsonConvert.SerializeObject(response), Encoding.UTF8, MediaTypeNames.Application.Json));
+                }
+            }
+        }
+
+
+        public async Task PostAsync(string ToUser, string message, MessageFormat format = MessageFormat.Text)
+        {
+            try
+            {
+                _client.SendMessage(ToUser, message);
+            }
+            catch (Exception e)
+            {
+                //TODO debug
+            }
         }
 
         public Task IsTypingAsync(string key)
         {
             //await _communicator.SetIsTyping(S4BConversationId.Format(conversationId));
             throw new System.NotImplementedException();
+        }
+
+        public Task<Availability> GetPresence(string jid)
+        {
+            StatusEventArgs e = new StatusEventArgs(new S22.Xmpp.Jid(jid), null);
+
+            return (Task.FromResult(e.Status.Availability));
         }
 
         public void SetPresence(bool isOnline)
@@ -133,17 +238,6 @@ namespace Witivio.JBot.Core.Services
                 _client.SetStatus(S22.Xmpp.Im.Availability.Offline);
         }
 
-        public Task Start()
-        {
-            _client.Connect();
-            if (_client.Connected == false)
-                this.Start();
-            SetPresence(true);
-            //_eventTask = Task.Run(() => ListenEvents(), _stopCancellationToken.Token);
-            _stopCancellationToken = new CancellationTokenSource();
-            return (Task.FromResult<object>(null));
-        }
-
         public async Task<string> StartNewConversation(ConversationParameters conversationParameters)
         {
             if (conversationParameters == null) throw new ArgumentNullException(nameof(conversationParameters));
@@ -152,8 +246,7 @@ namespace Witivio.JBot.Core.Services
                 if (!conversationParameters.IsGroup.GetValueOrDefault())
                 {
                     string to = conversationParameters.Members.First().Id;
-
-                    var presence = await this.GetPresence("");
+                    var presence = await this.GetPresence(to);
                     if (presence == S22.Xmpp.Im.Availability.Online || presence == S22.Xmpp.Im.Availability.ExtendedAway || presence == S22.Xmpp.Im.Availability.Chat)
                     {
                         if (string.IsNullOrEmpty(conversationParameters.Activity.Id))
@@ -161,7 +254,31 @@ namespace Witivio.JBot.Core.Services
 
                         var directLineConversation = await this.AskANewConversation?.Invoke();
                         proactiveConversationStack.TryAdd(conversationParameters.Activity.Id, new ProactiveConversation { Activity = conversationParameters.Activity, DirectLineConversation = directLineConversation });
-                        //start message await _client.StartMessaging(to, conversationParameters.Activity.Id);
+                        //await _communicator.StartMessaging(to, conversationParameters.Activity.Id);
+                        /*
+                            public async Task StartMessaging(string to, string operationId)
+                            {
+                                dynamic json = new JObject();
+                                json.importance = "Normal";
+                                json.sessionContext = Guid.NewGuid().ToString();
+                                json.telemetryId = null;
+                                json.to = "sip:" + to;
+                                json.operationId = operationId;
+
+                                using (var client = _httpClientFactory.CreateWithAutorization(_token))
+                                {
+                                    var communicationJson = await client.GetStringAsyncWithRetry(_applicationUri.Scheme + "://" + _applicationUri.Host + _makeMeAvailable.Embedded.Communication.Links.Self.Href);
+                                    dynamic dynamicCommunicationJson = JObject.Parse(communicationJson);
+                                    string jsonToSend = JsonConvert.SerializeObject(json);
+                                    var responseMessage = await client.PostAsyncWithRetry(_applicationUri.Scheme + "://" + _applicationUri.Host + dynamicCommunicationJson._links.startMessaging.href, new StringContent(jsonToSend, Encoding.UTF8, MediaTypeNames.Application.Json));
+                                    if (responseMessage.StatusCode != HttpStatusCode.Created)
+                                        throw new Exception("201 is expected for PostAsync");
+                                }
+                            }
+                        */
+
+                        /* JBNewMessage(this, new S22.Xmpp.Im.MessageEventArgs(_client.Jid, message) { }); */
+                        // TODO check if good
                         return directLineConversation.ConversationId;
                     }
                 }
@@ -170,10 +287,6 @@ namespace Witivio.JBot.Core.Services
             throw new ArgumentNullException("conversationParameters.Members");
         }
 
-        public async Task PostAsync(string ToUser, string message, MessageFormat format = MessageFormat.Text)
-        {
-            _client.SendMessage(ToUser, message);
-        }
 
         public void Stop()
         {

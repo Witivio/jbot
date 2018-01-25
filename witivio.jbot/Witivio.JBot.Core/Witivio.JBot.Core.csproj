@@ -30,6 +30,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Autofac">
+      <Version>4.6.2</Version>
+    </PackageReference>
     <PackageReference Include="Microsoft.Bot.Connector.DirectLine" Version="3.0.2" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="2.0.0" />
@@ -56,6 +59,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CommunicationLinker.cs" />
+    <Compile Include="DependencyModule\ModuleIAuth.cs" />
+    <Compile Include="DependencyModule\ModuleDataStore.cs" />
+    <Compile Include="DependencyModule\ModuleDirectLine.cs" />
+    <Compile Include="DependencyModule\ModuleHttpClientFactory.cs" />
+    <Compile Include="DependencyModule\ModuleJabberClient.cs" />
+    <Compile Include="DependencyModule\ModuleMessageFormater.cs" />
+    <Compile Include="DependencyModule\ModuleUCWACommunicator.cs" />
     <Compile Include="Infrastructure\Configuration.cs" />
     <Compile Include="Infrastructure\ConfigurationKeys.cs" />
     <Compile Include="Infrastructure\Extensions.cs" />
@@ -64,22 +74,65 @@
     <Compile Include="Models\Error.cs" />
     <Compile Include="Models\JidWithConvId.cs" />
     <Compile Include="Models\MessageFormat.cs" />
-    <Compile Include="Models\MessagingInvitation.cs" />
+    <Compile Include="Models\ProActive\Listener\From.cs" />
+    <Compile Include="Models\ProActive\Listener\MessagingEmbedded.cs" />
+    <Compile Include="Models\ProActive\Listener\MessagingInvitation.cs" />
     <Compile Include="Models\OAuthToken.cs" />
+    <Compile Include="Models\ProActive\Listener\EmbeddedEvent.cs" />
+    <Compile Include="Models\ProActive\Listener\Event.cs" />
+    <Compile Include="Models\ProActive\Listener\EventLink.cs" />
+    <Compile Include="Models\ProActive\Listener\EventLinks.cs" />
+    <Compile Include="Models\ProActive\Listener\EventResponse.cs" />
+    <Compile Include="Models\ProActive\Listener\IncommingMessage.cs" />
+    <Compile Include="Models\ProActive\Listener\Links.cs" />
+    <Compile Include="Models\ProActive\Listener\Message.cs" />
+    <Compile Include="Models\ProActive\Listener\MessageLinks.cs" />
+    <Compile Include="Models\ProActive\Listener\MessagingLinks.cs" />
+    <Compile Include="Models\ProActive\Listener\Messaging.cs" />
+    <Compile Include="Models\ProActive\Listener\MissedItems.cs" />
+    <Compile Include="Models\ProActive\Listener\Participant.cs" />
+    <Compile Include="Models\ProActive\Listener\Reason.cs" />
+    <Compile Include="Models\ProActive\Listener\RelBase.cs" />
+    <Compile Include="Models\ProActive\Listener\Self.cs" />
+    <Compile Include="Models\ProActive\Listener\Sender.cs" />
+    <Compile Include="Models\ProActive\ProActiveMessageResponse.cs" />
+    <Compile Include="Models\ProActive\ProActiveMessageResultcs.cs" />
     <Compile Include="Models\RuntimeMode.cs" />
     <Compile Include="Models\Settings.cs" />
     <Compile Include="Models\UserPresence.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\BotndoConnectorClient.cs" />
+    <Compile Include="Services\Communicator.cs" />
+    <Compile Include="Services\Communicator\ApplicationLinks.cs" />
+    <Compile Include="Services\Communicator\ApplicationResponse.cs" />
+    <Compile Include="Services\Communicator\Communication.cs" />
+    <Compile Include="Services\Communicator\Embedded.cs" />
+    <Compile Include="Services\Communicator\EmbeddedLinks.cs" />
+    <Compile Include="Services\Communicator\HttpClientFactory.cs" />
+    <Compile Include="Services\Communicator\HttpResult.cs" />
+    <Compile Include="Services\Communicator\MakeMeAvailableResponse.cs" />
+    <Compile Include="Services\Communicator\Me.cs" />
+    <Compile Include="Services\Communicator\OnlineMeetings.cs" />
+    <Compile Include="Services\Communicator\People.cs" />
+    <Compile Include="Services\Communicator\PeopleLinks.cs" />
+    <Compile Include="Services\Communicator\RelEtagBase.cs" />
+    <Compile Include="Services\Communicator\TelemetryHttpClient.cs" />
     <Compile Include="Services\Conversation\JbotConversationId.cs" />
+    <Compile Include="Services\Conversion.cs" />
     <Compile Include="Services\Domain.cs" />
     <Compile Include="Services\EventArgs\ConversationEventArgs.cs" />
     <Compile Include="Services\Conversation\ConversationParameters.cs" />
     <Compile Include="Services\Conversation\ConversationState.cs" />
     <Compile Include="Services\Datastore.cs" />
     <Compile Include="Services\EventArgs\MessageEventArgs.cs" />
+    <Compile Include="Services\EventProcessor.cs" />
     <Compile Include="Services\Formater\MessageFormatter.cs" />
+    <Compile Include="Services\HtmlHelpers.cs" />
+    <Compile Include="Services\IAuth.cs" />
     <Compile Include="Services\JabberClient.cs" />
+    <Compile Include="Services\JBConversationId.cs" />
+    <Compile Include="Services\MediaTypeNames.cs" />
+    <Compile Include="Services\MessageDecoder.cs" />
     <Compile Include="Services\MessageFormatter.cs" />
     <Compile Include="Services\Conversation\ProactiveConversation.cs" />
     <Compile Include="Services\TelemetryClient.cs" />

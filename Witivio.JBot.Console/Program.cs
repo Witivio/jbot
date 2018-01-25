@@ -24,6 +24,7 @@ namespace Witivio.JBot.Console
                     jbotService.Dispose();
                     return;
                 }
+                Thread.Sleep(500);
             }
         }
     }

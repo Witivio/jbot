@@ -23,7 +23,7 @@ namespace Witivio.JBot.Core
 
     public class CommunicationLinker : ErrorProvider, ICommunicationLinker
     {
-        public CommunicationLinker(IDirectLineClient directLineClient, IConversationDataStore conversationsStates, IMessageFormater messageFormater, JabberClient jabberClient, String BoteId)
+        public CommunicationLinker(IDirectLineClient directLineClient, IConversationDataStore conversationsStates, IMessageFormater messageFormater, IJabberClient jabberClient, String BoteId)
         {
             _boteId = BoteId;
             _directLineClient = directLineClient;
@@ -37,6 +37,7 @@ namespace Witivio.JBot.Core
         private IConversationDataStore _conversationsStates { get; set; }
         private IMessageFormater _messageFormater { get; set; }
 
+        private readonly int bufSize = 2048;
         private String _boteId { get; }
 
         private ConversationTaskState ListenWebSockets(Conversation conversation, string JBOTConversationId, ConversationState conversationState)
@@ -57,10 +58,18 @@ namespace Witivio.JBot.Core
                         bool AllPacketComplet = false;
                         while (AllPacketComplet != true)
                         {
-                            byte[] bufferbytearray = new byte[2048];
+                            byte[] bufferbytearray = new byte[bufSize];
                             WebSocketReceiveResult socketresult = await client.ReceiveAsync(new ArraySegment<byte>(bufferbytearray), taskState.CancellationTokenSource.Token);
                             AllPacketComplet = socketresult.EndOfMessage;
-                            AllPacket += System.Text.Encoding.Default.GetString(bufferbytearray);
+                            try
+                            {
+                                AllPacket += System.Text.Encoding.Default.GetString(bufferbytearray);
+                            }
+                            catch(Exception e)
+                            {
+                                //TODO debug
+                                continue;
+                            }
                         }
                         ActivitySet activitySet = Newtonsoft.Json.JsonConvert.DeserializeObject<ActivitySet>(AllPacket);
                         if (activitySet == null)
@@ -155,8 +164,7 @@ namespace Witivio.JBot.Core
             }
             await SendMessageToDirectLine(e);
         }
-
-
+        
         private async void ClientOnMessageReceived(object sender, NewConversationEventArgs e)
         {
             await SendMessageToDirectLine(e);

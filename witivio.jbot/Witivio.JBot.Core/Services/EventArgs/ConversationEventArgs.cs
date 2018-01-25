@@ -13,6 +13,7 @@ namespace Witivio.JBot.Core.Services.EventArgs
         public string ConversationId { get; set; }
         public User From { get; set; }
         public User Bot { get; set; }
+        public MessageFormat SupportedFormat { get; set; }
     }
 
     public class NewConversationEventArgs : ConversationEventArgs
