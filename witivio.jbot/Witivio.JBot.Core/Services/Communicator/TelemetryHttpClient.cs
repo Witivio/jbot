@@ -17,6 +17,7 @@ namespace Witivio.JBot.Core.Services.Communicator
     using Polly;
     using System.Collections.Generic;
     using Witivio.JBot.Core.Infrastructure;
+    using Witivio.JBot.Core.Services.HttpManager;
 
     namespace Botndo.S4Bot.Core.UCWA
     {

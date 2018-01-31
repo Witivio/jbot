@@ -13,7 +13,7 @@ namespace Witivio.JBot.Console
         static void Main(string[] args)
         {
             var jbotService = new Jbot();
-            jbotService.Configure(Core.Models.RuntimeMode.OnPremise);
+            jbotService.Configure(Core.Infrastructure.RuntimeMode.OnPremise);
             jbotService.Start();
 
             var cancelToken = new CancellationToken();

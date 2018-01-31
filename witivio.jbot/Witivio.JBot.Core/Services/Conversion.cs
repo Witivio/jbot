@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -10,14 +11,14 @@ namespace Witivio.JBot.Core.Services
     {
         public static int stringToInt(String toConvert, bool exitProgramm = false)
         {
-            try
+            int number;
+
+            bool result = Int32.TryParse(toConvert, out number);
+            if (result)
+                return (number);
+            else
             {
-                return (Int32.Parse(toConvert));
-            }
-            catch (Exception e)
-            {
-                //TODO debug
-                Console.WriteLine(e.Message);
+                Debug.WriteLine("Error convert String to Int.");
                 if (exitProgramm == true)
                     System.Environment.Exit(1);
             }
@@ -26,14 +27,15 @@ namespace Witivio.JBot.Core.Services
 
         public static bool stringToBool(String toConvert, bool exitProgramm = false)
         {
-            try
+
+            bool resbool;
+
+            bool result = Boolean.TryParse(toConvert, out resbool);
+            if (result)
+                return (resbool);
+            else
             {
-                return (Convert.ToBoolean(toConvert));
-            }
-            catch (Exception e)
-            {
-                //TODO debug
-                Console.WriteLine(e.Message);
+                Debug.WriteLine("Error convert String to Bool.");
                 if (exitProgramm == true)
                     System.Environment.Exit(1);
             }

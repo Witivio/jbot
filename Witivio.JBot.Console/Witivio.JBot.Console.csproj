@@ -57,4 +57,9 @@
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <ProjectExtensions>
+    <VisualStudio>
+      <UserProperties appsettings_1json__JSONSchema="http://json.schemastore.org/bower" />
+    </VisualStudio>
+  </ProjectExtensions>
 </Project>

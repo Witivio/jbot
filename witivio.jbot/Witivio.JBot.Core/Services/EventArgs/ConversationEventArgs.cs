@@ -13,6 +13,7 @@ namespace Witivio.JBot.Core.Services.EventArgs
         public string ConversationId { get; set; }
         public User From { get; set; }
         public User Bot { get; set; }
+        public DateTime Date { get; set; }
         public MessageFormat SupportedFormat { get; set; }
     }
 
@@ -20,12 +21,12 @@ namespace Witivio.JBot.Core.Services.EventArgs
     {
         public string Message { get; set; }
 
-        public NewConversationEventArgs(User from, User bot, string message, string convid)
+        public NewConversationEventArgs()
         {
-            this.Bot = bot;
-            this.From = from;
-            this.Message = message;
-            this.ConversationId = convid;
+            //this.Bot = bot;
+            //this.From = from;
+            //this.Message = message;
+            //this.ConversationId = convid;
         }
     }
 

@@ -14,6 +14,7 @@ namespace Witivio.JBot.Core.Services
         public string Watermark { get; set; }
         public Microsoft.Bot.Connector.DirectLine.Conversation Conversation { get; set; }
         public string From { get; set; }
+        public DateTime Date { get; set; }
         public MessageFormat SupportedFormat { get; set; }
     }
 

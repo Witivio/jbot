@@ -12,20 +12,23 @@ using System.Linq;
 using System.Threading;
 using System.Net.WebSockets;
 using Witivio.JBot.Core.Services.EventArgs;
+using Witivio.JBot.Core.Services.Data;
+using System.Diagnostics;
+using Witivio.JBot.Core.Configuration;
 
 namespace Witivio.JBot.Core
 {
     public interface ICommunicationLinker : IDisposable
     {
-        void Start();
+        Task StartAsync();
         JBotError GetError();
     }
 
     public class CommunicationLinker : ErrorProvider, ICommunicationLinker
     {
-        public CommunicationLinker(IDirectLineClient directLineClient, IConversationDataStore conversationsStates, IMessageFormater messageFormater, IJabberClient jabberClient, String BoteId)
+        public CommunicationLinker(IDirectLineClient directLineClient, IConversationDataStore conversationsStates, IMessageFormater messageFormater, IJabberClient jabberClient, IConfiguration config)
         {
-            _boteId = BoteId;
+            _config = config;
             _directLineClient = directLineClient;
             _jabberClient = jabberClient;
             _conversationsStates = conversationsStates;
@@ -36,9 +39,9 @@ namespace Witivio.JBot.Core
         private IJabberClient _jabberClient { get; }
         private IConversationDataStore _conversationsStates { get; set; }
         private IMessageFormater _messageFormater { get; set; }
+        private IConfiguration _config { get; set; }
 
         private readonly int bufSize = 2048;
-        private String _boteId { get; }
 
         private ConversationTaskState ListenWebSockets(Conversation conversation, string JBOTConversationId, ConversationState conversationState)
         {
@@ -78,7 +81,6 @@ namespace Witivio.JBot.Core
                         {
                             var typingActivity = activity.AsTypingActivity();
                             if (typingActivity != null)
-                                // on continue car on ne peux pas set le "isTyping sur jabber"
                                 continue;
                             if (!string.IsNullOrWhiteSpace(activity.Text))
                                 await _jabberClient.PostAsync(conversationState.From, _messageFormater.FormatToText(activity));
@@ -113,8 +115,10 @@ namespace Witivio.JBot.Core
                     try
                     {
                         var fromProperty = new ChannelAccount(e.From.Email, e.From.DisplayName);
-                        var recipientProperty = new ChannelAccount($"sip:{e.Bot.Email}", $"sip:{e.Bot.Email}");
-                        var channelData = new ChannelAccount(_boteId, _boteId);
+
+                        var directLineKey = _config.Get<string>(ConfigurationKeys.Credentials.DirectLine);
+                        var recipientProperty = new ChannelAccount($"sip:{_config.Get<String>(ConfigurationKeys.Credentials.Account)}", $"sip:{_config.Get<String>(ConfigurationKeys.Credentials.Account)}");
+                        var channelData = new ChannelAccount(_config.Get<String>(Configuration.ConfigurationKeys.Credentials.BotId), Configuration.ConfigurationKeys.Credentials.BotId);
                         var activity = new Microsoft.Bot.Connector.DirectLine.Activity(text: e.Message, fromProperty: fromProperty, type: ActivityTypes.Message, recipient: recipientProperty, channelData: channelData);
                         await _directLineClient.Conversations.PostActivityAsync(botConversationState.ConversationState.Conversation.ConversationId, activity);
                     }
@@ -130,7 +134,7 @@ namespace Witivio.JBot.Core
             }
         }
 
-        private async void ConversationEnded(object sender, ConversationEventArgs e)
+        private async void ConvEnded(object sender, ConversationEventArgs e)
         {
             try
             {
@@ -148,29 +152,38 @@ namespace Witivio.JBot.Core
             }
         }
 
-        private async void ClientOnNewConversation(object sender, NewConversationEventArgs e)
+        
+        private async void ClientOnMessageReceivedOrNewConversation(object sender, NewConversationEventArgs e)
         {
+            String mail;
+            ConversationState res = await _conversationsStates.GetValueAsync<ConversationState>(e.From.Email);
+            if (res != null && res.Conversation != null && e.From.Email == res.From)
+                mail = e.From.Email;
+            else
+                mail = String.Empty;
             try
             {
-                var conversation = await StartNewDirectLineConversation();
-                var conversationState = new ConversationState { Conversation = conversation, From = e.From.Email};
-                var taskState = ListenWebSockets(conversation, e.ConversationId, conversationState);
-                await _conversationsStates.TryAddOrUpdateAsync(e.ConversationId, taskState);
-
+                if (string.IsNullOrEmpty(mail))
+                {
+                    var conversation = await StartNewDirectLineConversationAsync();
+                    var conversationState = new ConversationState { Conversation = conversation, From = e.From.Email, Date = e.Date };
+                    var taskState = ListenWebSockets(conversation, e.ConversationId, conversationState);
+                    await _conversationsStates.TryAddOrUpdateAsync(e.ConversationId, taskState);
+                    await SendMessageToDirectLine(e);
+                    return;
+                }
             }
             catch (Exception exception)
             {
                 SetError(exception);
+                return;
             }
-            await SendMessageToDirectLine(e);
-        }
-        
-        private async void ClientOnMessageReceived(object sender, NewConversationEventArgs e)
-        {
+            res.Date = e.Date;
+            await _conversationsStates.TryAddOrUpdateAsync(e.ConversationId, res);
             await SendMessageToDirectLine(e);
         }
 
-        private async Task<Conversation> StartNewDirectLineConversation()
+        private async Task<Conversation> StartNewDirectLineConversationAsync()
         {
             var conversation = await _directLineClient.Conversations.StartConversationAsync();
             return conversation;
@@ -195,19 +208,52 @@ namespace Witivio.JBot.Core
             }
         }
 
-        public void Start()
+        /*
+        private async Task PeriodicRunProactive(TimeSpan interval)
+        {
+            while (true)
+            {
+               // _jabberClient.CheckingProactivityInQueue();
+                await Task.Delay(interval);
+            }
+        }
+        */
+        private async void CheckAfkConversationAndDeleteItAsync()
+        {
+            var allconv = await _conversationsStates.GetAllAsync<ConversationTaskState>();
+            foreach (var currentconv in allconv)
+            {
+                if (currentconv.Value != null && currentconv.Value.ConversationState != null && currentconv.Value.ConversationState.Date != null && (DateTime.Now - currentconv.Value.ConversationState.Date).Duration() > TimeSpan.FromMinutes(1))
+                {
+                    Debug.WriteLine("Close conversation " + currentconv.Value.ConversationState.From);
+                    ConvEnded(this, new ConversationEventArgs() {ConversationId = currentconv.Value.ConversationState.From });
+                }
+            }
+        }
+
+        private async Task PeriodicCheckAfkAsyncTask(TimeSpan interval)
+        {
+            while (true)
+            {
+                CheckAfkConversationAndDeleteItAsync();
+                await Task.Delay(interval);
+            }
+        }
+
+
+        public async Task StartAsync()
         {
             try
             {
                 _jabberClient.StatusChanged += PersistantStatus;
-                _jabberClient.NewMessage += ClientOnMessageReceived;
-                _jabberClient.NewConversation += ClientOnNewConversation;
-                _jabberClient.ConversationEnded += ConversationEnded;
-                _jabberClient.AskANewConversation += StartNewDirectLineConversation;
-                _jabberClient.ProactiveConversation += ProactiveConversation;
+                _jabberClient.NewMessageOrNewConversation += ClientOnMessageReceivedOrNewConversation;
 
+                // _jabberClient.AskANewConversation += StartNewDirectLineConversation;
+                _jabberClient.ProactiveConversation += ProactiveConversation;
                 _jabberClient.Start();
                 _jabberClient.SetPresence(true);
+
+                await PeriodicCheckAfkAsyncTask(TimeSpan.FromMinutes(30));
             }
             catch (Exception e)
             {

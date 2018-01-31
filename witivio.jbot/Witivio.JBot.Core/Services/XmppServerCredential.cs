@@ -8,6 +8,8 @@ namespace Witivio.JBot.Core.Models
 {
     public class XmppServerCredential : IAuth
     {
+        [JsonProperty("Account")]
+        public String Account { get; set; } = "admin@127.0.0.1";
         [JsonProperty("Host")]
         public String Host { get; set; } = "127.0.0.1";
         [JsonProperty("User")]
@@ -28,6 +30,7 @@ namespace Witivio.JBot.Core.Models
         {
             if (toCpy != null)
             {
+                this.Account = toCpy?.Account ?? this.Account;
                 this.Host = toCpy?.Host ?? this.Host;
                 this.User = toCpy?.User ?? this.User;
                 this.Password = toCpy?.Password ?? this.Password;

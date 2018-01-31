@@ -30,13 +30,22 @@ namespace Witivio.JBot.Core.Configuration
         {
             public static string UseKeyVault => "Credentials:UseKeyVault";
 
-            public static string DirectLine => "Credentials:DirectLine:Key";
+            public static string DirectLine => "Credentials:DirectLineKey";
 
-            public static string Email => "Credentials:S4b:Email";
+            public static string Account => "Credentials:Xmpp:Account";
+            public static string Host => "Credentials:Xmpp:Host";
 
-            public static string Password => "Credentials:S4b:Password";
+            public static string User => "Credentials:Xmpp:User";
+
+            public static string Password => "Credentials:Xmpp:Password";
+
+            public static string Port => "Credentials:Xmpp:Port";
+
+            public static string Tls => "Credentials:Xmpp:Tls";
 
             public static string BotId => "Credentials:BotId";
+
+
             public static string AADApplicationId => "Credentials:S4b:AADApplicationId";
             public static string DomainLogin => "Credentials:S4b:DomainLogin";
         }
