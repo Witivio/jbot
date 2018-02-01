@@ -26,6 +26,11 @@ namespace Witivio.JBot.Core.Configuration
 
         }
 
+        public static class Timer
+        {
+            public static string AfkTimer => "Timer:AfkTimer";
+        }
+
         public static class Credentials
         {
             public static string UseKeyVault => "Credentials:UseKeyVault";

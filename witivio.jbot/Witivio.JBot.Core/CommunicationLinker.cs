@@ -240,7 +240,35 @@ namespace Witivio.JBot.Core
             }
         }
 
+        private TimeSpan DetermineTime(int nb, char c)
+        {
+            switch (c)
+            {
+                case 's' :
+                    return (TimeSpan.FromSeconds(nb));
+                case 'm':
+                    return (TimeSpan.FromMinutes(nb));
+                case 'h':
+                    return (TimeSpan.FromHours(nb));
+                case 'd':
+                    return (TimeSpan.FromDays(nb));
+                default:
+                    return (TimeSpan.FromMinutes(nb));
+            }
+        }
 
+        private TimeSpan DetermineTimerForCheckAfk(String stringTimer)
+        {
+            int res;
+            char lastCharacter = stringTimer[stringTimer.Length - 1];
+
+            stringTimer = stringTimer.Remove(stringTimer.Length - 1);
+            res = ConversionClass.stringToInt(stringTimer);
+            if (res < 0)
+                return (TimeSpan.FromMinutes(15));
+            return (DetermineTime(res, lastCharacter));
+        }
+        
         public async Task StartAsync()
         {
             try
@@ -253,7 +281,7 @@ namespace Witivio.JBot.Core
                 _jabberClient.Start();
                 _jabberClient.SetPresence(true);
 
-                await PeriodicCheckAfkAsyncTask(TimeSpan.FromMinutes(30));
+                await PeriodicCheckAfkAsyncTask(DetermineTimerForCheckAfk(_config.Get<string>(ConfigurationKeys.Timer.AfkTimer)));
             }
             catch (Exception e)
             {
