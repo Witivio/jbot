@@ -17,6 +17,11 @@ namespace Witivio.JBot.Core.Services.EventArgs
         public MessageFormat SupportedFormat { get; set; }
     }
 
+    public class NewMessageEventArgs : ConversationEventArgs
+    {
+        public string Message { get; set; }
+    }
+
     public class NewConversationEventArgs : ConversationEventArgs
     {
         public string Message { get; set; }

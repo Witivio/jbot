@@ -35,6 +35,7 @@ namespace Witivio.JBot.Core.Services.Configuration
         {
             return new XmppServerCredential
             {
+                Account = _configuration.Get<string>(ConfigurationKeys.Credentials.Account),
                 Host = _configuration.Get<string>(ConfigurationKeys.Credentials.Host),
                 Port = _configuration.Get<string>(ConfigurationKeys.Credentials.Port),
                 User = _configuration.Get<string>(ConfigurationKeys.Credentials.User),

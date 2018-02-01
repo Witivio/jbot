@@ -1,8 +1,0 @@
-version: '3'
-
-services:
-  Witivio.JBot.Host:
-    image: Witivio.JBot.Host
-    build:
-      context: .
-      dockerfile: Witivio.JBot.Host\Dockerfile

@@ -15,14 +15,12 @@ namespace Witivio.JBot.Host
     {
         public static void Main(string[] args)
         {
-            var hostBuilder = new WebHostBuilder()
-              .UseKestrel()
-              .UseContentRoot(Directory.GetCurrentDirectory())
-              .UseIISIntegration()
-              .UseStartup<Startup>();
-
-            var host = hostBuilder.Build();
-            host.Run();
+            BuildWebHost(args).Run();
         }
+
+        public static IWebHost BuildWebHost(string[] args) =>
+            WebHost.CreateDefaultBuilder(args)
+                .UseStartup<Startup>()
+                .Build();
     }
 }

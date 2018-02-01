@@ -3,10 +3,10 @@
   <PropertyGroup Label="Globals">
     <ProjectVersion>2.0</ProjectVersion>
     <DockerTargetOS>Windows</DockerTargetOS>
-    <ProjectGuid>a22c97a2-354c-4c16-a0fa-3a92453e420b</ProjectGuid>
+    <ProjectGuid>ed4f659f-1e45-45a4-896c-fb26fad69802</ProjectGuid>
     <DockerLaunchBrowser>True</DockerLaunchBrowser>
     <DockerServiceUrl>http://{ServiceIPAddress}</DockerServiceUrl>
-    <DockerServiceName>witivio.jbot.host</DockerServiceName>
+    <DockerServiceName>witivio.jbot</DockerServiceName>
   </PropertyGroup>
   <ItemGroup>
     <None Include="docker-compose.override.yml">

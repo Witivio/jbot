@@ -26,22 +26,26 @@ namespace Witivio.JBot.Core
 
     public class CommunicationLinker : ErrorProvider, ICommunicationLinker
     {
-        public CommunicationLinker(IDirectLineClient directLineClient, IConversationDataStore conversationsStates, IMessageFormater messageFormater, IJabberClient jabberClient, IConfiguration config)
+        public CommunicationLinker(IDirectLineClient directLineClient, IConversationDataStore conversationsStates, IMessageFormater messageFormater,
+            IJabberClient jabberClient, IConfiguration config, IScheduler keepALiveScheduler)
         {
             _config = config;
             _directLineClient = directLineClient;
             _jabberClient = jabberClient;
             _conversationsStates = conversationsStates;
             _messageFormater = messageFormater;
-        }
+            _keepALiveScheduler = keepALiveScheduler;
+       }
 
         private IDirectLineClient _directLineClient { get; }
         private IJabberClient _jabberClient { get; }
         private IConversationDataStore _conversationsStates { get; set; }
         private IMessageFormater _messageFormater { get; set; }
         private IConfiguration _config { get; set; }
+        private IScheduler _keepALiveScheduler { get; set; }
 
         private readonly int bufSize = 2048;
+        private const int TIMER_CHECK_AFK_PEOPLE_IN_MINUTE = 2;
 
         private ConversationTaskState ListenWebSockets(Conversation conversation, string JBOTConversationId, ConversationState conversationState)
         {
@@ -66,7 +70,7 @@ namespace Witivio.JBot.Core
                             AllPacketComplet = socketresult.EndOfMessage;
                             try
                             {
-                                AllPacket += System.Text.Encoding.Default.GetString(bufferbytearray);
+                                AllPacket += System.Text.Encoding.UTF8.GetString(bufferbytearray);
                             }
                             catch(Exception e)
                             {
@@ -103,7 +107,7 @@ namespace Witivio.JBot.Core
             return taskState;
         }
 
-        private async Task SendMessageToDirectLine(NewConversationEventArgs e)
+        private async Task SendMessageToDirectLine(NewMessageEventArgs e)
         {
             try
             {
@@ -152,8 +156,8 @@ namespace Witivio.JBot.Core
             }
         }
 
-        
-        private async void ClientOnMessageReceivedOrNewConversation(object sender, NewConversationEventArgs e)
+        // TODO module
+        private async void ClientOnMessageReceivedOrNewConversation(object sender, NewMessageEventArgs e)
         {
             String mail;
             ConversationState res = await _conversationsStates.GetValueAsync<ConversationState>(e.From.Email);
@@ -218,12 +222,12 @@ namespace Witivio.JBot.Core
             }
         }
         */
-        private async void CheckAfkConversationAndDeleteItAsync()
+        private async Task CheckAfkConversationAndDeleteItAsync()
         {
             var allconv = await _conversationsStates.GetAllAsync<ConversationTaskState>();
             foreach (var currentconv in allconv)
             {
-                if (currentconv.Value != null && currentconv.Value.ConversationState != null && currentconv.Value.ConversationState.Date != null && (DateTime.Now - currentconv.Value.ConversationState.Date).Duration() > TimeSpan.FromMinutes(1))
+                if (currentconv.Value != null && currentconv.Value.ConversationState != null && currentconv.Value.ConversationState.Date != null && (DateTime.UtcNow - currentconv.Value.ConversationState.Date).Duration() > TimeSpan.FromMinutes(1))
                 {
                     Debug.WriteLine("Close conversation " + currentconv.Value.ConversationState.From);
                     ConvEnded(this, new ConversationEventArgs() {ConversationId = currentconv.Value.ConversationState.From });
@@ -231,42 +235,12 @@ namespace Witivio.JBot.Core
             }
         }
 
-        private async Task PeriodicCheckAfkAsyncTask(TimeSpan interval)
+        private async Task PeriodicCheckAfkTask()
         {
             while (true)
             {
-                CheckAfkConversationAndDeleteItAsync();
-                await Task.Delay(interval);
+                await CheckAfkConversationAndDeleteItAsync();
             }
-        }
-
-        private TimeSpan DetermineTime(int nb, char c)
-        {
-            switch (c)
-            {
-                case 's' :
-                    return (TimeSpan.FromSeconds(nb));
-                case 'm':
-                    return (TimeSpan.FromMinutes(nb));
-                case 'h':
-                    return (TimeSpan.FromHours(nb));
-                case 'd':
-                    return (TimeSpan.FromDays(nb));
-                default:
-                    return (TimeSpan.FromMinutes(nb));
-            }
-        }
-
-        private TimeSpan DetermineTimerForCheckAfk(String stringTimer)
-        {
-            int res;
-            char lastCharacter = stringTimer[stringTimer.Length - 1];
-
-            stringTimer = stringTimer.Remove(stringTimer.Length - 1);
-            res = ConversionClass.stringToInt(stringTimer);
-            if (res < 0)
-                return (TimeSpan.FromMinutes(15));
-            return (DetermineTime(res, lastCharacter));
         }
         
         public async Task StartAsync()
@@ -280,14 +254,14 @@ namespace Witivio.JBot.Core
                 _jabberClient.ProactiveConversation += ProactiveConversation;
                 _jabberClient.Start();
                 _jabberClient.SetPresence(true);
-
-                await PeriodicCheckAfkAsyncTask(DetermineTimerForCheckAfk(_config.Get<string>(ConfigurationKeys.Timer.AfkTimer)));
+                _keepALiveScheduler.Start(PeriodicCheckAfkTask, TimeSpan.FromMinutes(TIMER_CHECK_AFK_PEOPLE_IN_MINUTE));
             }
             catch (Exception e)
             {
                 SetError(e);
             }
         }
+
         public void Dispose()
         {
             throw new NotImplementedException();

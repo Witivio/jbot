@@ -18,6 +18,7 @@ using Witivio.JBot.Core.Configuration;
 using Witivio.JBot.Core.Infrastructure;
 //using Witivio.JBot.Core.Services.Configuration;
 using Microsoft.Extensions.Configuration;
+using System.Diagnostics;
 
 namespace Witivio.JBot.Core
 {
@@ -58,36 +59,68 @@ namespace Witivio.JBot.Core
                 /*if (string.IsNullOrWhiteSpace(directLineKey))
                     return new BotndoConnectorClient(config);
                 else*/
-                    return new DirectLineClient(directLineKey);
+                    return (new DirectLineClient(directLineKey));
 
             }).As<IDirectLineClient>().SingleInstance();
-            //IConfiguration config = new Configuration();
+
+            builder.Register<IConversationDataStore>((c, p) =>
+            {
+                return (new InMemoryDataStore());
+            }).As<IConversationDataStore>().SingleInstance();
+
+            builder.Register<IScheduler>((c, p) =>
+            {
+                return (new Scheduler());
+            }).As<IScheduler>().SingleInstance();
+
+            builder.Register<IMessageFormater>((c, p) =>
+            {
+                return (new MessageFormater());
+            }).As<IMessageFormater>().SingleInstance();
+
+
+            builder.Register<Witivio.JBot.Core.Services.Configuration.IXmppProvider>((c, p) =>
+            {
+                var config = c.Resolve<Witivio.JBot.Core.Configuration.IConfiguration>();
+                return (new Witivio.JBot.Core.Services.Configuration.XmppProvider(config));
+            }).As<Witivio.JBot.Core.Services.Configuration.IXmppProvider>().SingleInstance();
+
 
             builder.Register(c => 
             {
                 var config = c.Resolve<Witivio.JBot.Core.Configuration.IConfiguration>();
                 var directline = c.Resolve<IDirectLineClient>();
+                var scheduler = c.Resolve<IScheduler>();
+                var datastore = c.Resolve<IConversationDataStore>();
+                var formater = c.Resolve<IMessageFormater>();
+                var auth = c.Resolve<Witivio.JBot.Core.Services.Configuration.IXmppProvider>();
+
                 return new CommunicationLinker(
                     directline,
-                    new InMemoryDataStore(),
-                    new MessageFormater(),
+                    datastore,
+                    formater,
                     new JabberClient(
-                        new Witivio.JBot.Core.Services.Configuration.XmppProvider(config),
+                        auth,
                         config,
-                        new InMemoryDataStore(),
                         new ProactiveRequest(new HttpClientFactory())),
-                        config);
+                        config, scheduler);
             }).As<ICommunicationLinker>();
             _container = builder.Build();
 
+            Debug.WriteLine("config Bot");
+            /*
+            public CommunicationLinker(IDirectLineClient directLineClient, ISkypeCredentialProvider skypeCredentialProvider, IUCWAClient ucwaClient,
+                IConversationDataStore conversationsStates, IMessageFormater messageFormater, ILogger<CommunicationLinker> logger,
+                IStatisticsService statisticsService, IScheduler unActiveConversationScheduler, ITelemetryClient telemetryClient, IBotIdProvider botIdProvider)
+            */
             //public JabberClient(IXmppProvider xmppProvider, IConfiguration config, IPersistantDataStore applicationDataStore, IProactiveRequest proactiveRequest)
-            //public CommunicationLinker(IDirectLineClient directLineClient, IConversationDataStore conversationsStates, IMessageFormater messageFormater, JabberClient jabberClient)
             //public UCWACommunicator(IPersistantDataStore applicationDataStore, IHttpClientFactory httpClientFactory)
         }
 
         public void Start()
         {
             //Ajouter les logs
+            Debug.WriteLine("Start Bot");
             _container.Resolve<ICommunicationLinker>().StartAsync();
         }
 

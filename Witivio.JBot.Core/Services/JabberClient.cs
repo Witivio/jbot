@@ -28,7 +28,7 @@ namespace Witivio.JBot.Core.Services
 {
     public interface IJabberClient
     {
-        event EventHandler<NewConversationEventArgs> NewMessageOrNewConversation;
+        event EventHandler<NewMessageEventArgs> NewMessageOrNewConversation;
         event EventHandler<StatusEventArgs> StatusChanged;
         //event EventHandler<ConversationEventArgs> ConversationEnded;
         event EventHandler<ProActiveConversationEventArgs> ProactiveConversation;
@@ -47,7 +47,7 @@ namespace Witivio.JBot.Core.Services
 
     public class JabberClient : IJabberClient
     {
-        public event EventHandler<NewConversationEventArgs> NewMessageOrNewConversation;
+        public event EventHandler<NewMessageEventArgs> NewMessageOrNewConversation;
         public event EventHandler<StatusEventArgs> StatusChanged;
         //public event EventHandler<ConversationEventArgs> ConversationEnded;
         public event EventHandler<ProActiveConversationEventArgs> ProactiveConversation;
@@ -58,22 +58,22 @@ namespace Witivio.JBot.Core.Services
         private ConcurrentDictionary<string, ProactiveConversation> proactiveConversationStack;
         private CancellationTokenSource _stopCancellationToken;
         private XmppServerCredential _credentials;
-        private IPersistantDataStore _applicationDataStore;
         private XmppClient _client;
-        private ConcurrentDictionary<string, MessagingInvitation> _tempIncommingMessageToFireIfMessageDoesNotCome;
-
         private IProactiveRequest _proactiveRequest;
 
 
 
-        public JabberClient(IXmppProvider xmppProvider, IConfiguration config, IPersistantDataStore applicationDataStore, IProactiveRequest proactiveRequest)
+        public JabberClient(IXmppProvider xmppProvider, IConfiguration config, IProactiveRequest proactiveRequest)
         {
-            _applicationDataStore = applicationDataStore;
             _conf = config;
             _credentials = xmppProvider.GetLog();
             try
             {
-                _client = new XmppClient(_credentials.Host, ConversionClass.stringToInt(_credentials.Port, true), ConversionClass.stringToBool(_credentials.Tls, true))
+                bool resbool;
+                int resint;
+                Boolean.TryParse(_credentials.Tls, out resbool);
+                Int32.TryParse(_credentials.Port, out resint);
+                _client = new XmppClient(_credentials.Host, resint, resbool)
                 {
                     Username = _credentials.User,
                     Password = _credentials.Password,
@@ -86,40 +86,38 @@ namespace Witivio.JBot.Core.Services
                 System.Environment.Exit(1);
             }
 
-            _client.SubscriptionApproved += _client_SubscriptionApproved;
             _client.ActivityChanged += _client_ActivityChanged;
             _client.ChatStateChanged += _client_ChatStateChanged;
             _client.StatusChanged += PersistantStatus;
             _client.Message += OnNewMessageReceived;
+
             _proactiveRequest = proactiveRequest;
             proactiveConversationStack = new ConcurrentDictionary<string, ProactiveConversation>();
         }
 
-        private void _client_SubscriptionApproved(object sender, SubscriptionApprovedEventArgs e)
-        {
-
-        }
-
         private void _client_ChatStateChanged(object sender, S22.Xmpp.Extensions.ChatStateChangedEventArgs e)
         {
-            Debug.WriteLine("State: " + e.ChatState + " " +  e.Jid.GetBareJid() + " " + DateTime.Now);
+            Debug.WriteLine("State: " + e.ChatState + " " +  e.Jid.GetBareJid() + " " + DateTime.UtcNow);
 
             //_applicationDataStore.TryAddOrUpdateAsync<JidWithConvId>(e.Jid.ToEmail(), new JidWithConvId
             //{
             //    convid = e.Jid.ToEmail(),
             //    Jid = e.Jid,
-            //    date = DateTime.Now
+            //    date = DateTime.UtcNow
             //});
         }
 
         private void _client_ActivityChanged(object sender, S22.Xmpp.Extensions.ActivityChangedEventArgs e)
         {
+            _client.Im.ApproveSubscriptionRequest(e.Jid);
+            _client.Im.RequestSubscription(e.Jid);
         }
 
         public void OnNewMessageReceived(object sender, S22.Xmpp.Im.MessageEventArgs e)
         {
-            AddContact(e.Message.From.Domain, e.Message.From.Node);
-            NewMessageOrNewConversation?.Invoke(this, new NewConversationEventArgs
+            _client.Im.ApproveSubscriptionRequest(e.Jid);
+            _client.Im.RequestSubscription(e.Jid);
+            NewMessageOrNewConversation?.Invoke(this, new NewMessageEventArgs
             {
                 From = new User
                 {
@@ -127,7 +125,7 @@ namespace Witivio.JBot.Core.Services
                     DisplayName = e.Message.From.Node
                 },
                 ConversationId = e.Message.To.ToEmail(),
-                Date = DateTime.Now,
+                Date = DateTime.UtcNow,
                 Message = e.Message.Body
             });
         }
@@ -202,7 +200,7 @@ namespace Witivio.JBot.Core.Services
             else
                 _client.SetStatus(S22.Xmpp.Im.Availability.Offline);
         }
-
+        // TODO PROACTIVITY
         public async Task<string> StartNewConversation(ConversationParameters conversationParameters)
         {
             if (conversationParameters == null) throw new ArgumentNullException(nameof(conversationParameters));
