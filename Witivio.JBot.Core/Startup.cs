@@ -18,7 +18,7 @@ using Witivio.JBot.Core.Models;
 
 using Autofac;
 using Witivio.JBot.Core.DependencyModule;
-using Witivio.JBot.Core.Services.HttpManager;
+using Witivio.JBot.Core.HttpManager;
 using Witivio.JBot.Core.Configuration;
 using Witivio.JBot.Core.Infrastructure;
 //using Witivio.JBot.Core.Services.Configuration;

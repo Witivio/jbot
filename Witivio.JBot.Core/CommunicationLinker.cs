@@ -37,12 +37,12 @@ namespace Witivio.JBot.Core
             _keepALiveScheduler = keepALiveScheduler;
        }
 
-        private IDirectLineClient _directLineClient { get; }
-        private IJabberClient _jabberClient { get; }
-        private IConversationDataStore _conversationsStates { get; set; }
-        private IMessageFormater _messageFormater { get; set; }
-        private IConfiguration _config { get; set; }
-        private IScheduler _keepALiveScheduler { get; set; }
+        private IDirectLineClient _directLineClient;
+        private IJabberClient _jabberClient;
+        private IConversationDataStore _conversationsStates;
+        private IMessageFormater _messageFormater;
+        private IConfiguration _config;
+        private IScheduler _keepALiveScheduler;
 
         private readonly int bufSize = 2048;
         private const int TIMER_CHECK_AFK_PEOPLE_IN_MINUTE = 2;
@@ -121,8 +121,8 @@ namespace Witivio.JBot.Core
                         var fromProperty = new ChannelAccount(e.From.Email, e.From.DisplayName);
 
                         var directLineKey = _config.Get<string>(ConfigurationKeys.Credentials.DirectLine);
-                        var recipientProperty = new ChannelAccount($"sip:{_config.Get<String>(ConfigurationKeys.Credentials.Account)}", $"sip:{_config.Get<String>(ConfigurationKeys.Credentials.Account)}");
-                        var channelData = new ChannelAccount(_config.Get<String>(Configuration.ConfigurationKeys.Credentials.BotId), Configuration.ConfigurationKeys.Credentials.BotId);
+                        var recipientProperty = new ChannelAccount($"{_config.Get<String>(ConfigurationKeys.Credentials.Account)}", $"{_config.Get<String>(ConfigurationKeys.Credentials.Account)}");
+                        var channelData = new ChannelAccount(_config.Get<String>(Configuration.ConfigurationKeys.Credentials.BotId), _config.Get<string>(Configuration.ConfigurationKeys.Credentials.BotId));
                         var activity = new Microsoft.Bot.Connector.DirectLine.Activity(text: e.Message, fromProperty: fromProperty, type: ActivityTypes.Message, recipient: recipientProperty, channelData: channelData);
                         await _directLineClient.Conversations.PostActivityAsync(botConversationState.ConversationState.Conversation.ConversationId, activity);
                     }
@@ -138,16 +138,16 @@ namespace Witivio.JBot.Core
             }
         }
 
-        private async void ConvEnded(object sender, ConversationEventArgs e)
+        private async void DeleteConvStore(string convid)
         {
             try
             {
-                var state = await _conversationsStates.GetValueAsync<ConversationTaskState>(e.ConversationId);
+                var state = await _conversationsStates.GetValueAsync<ConversationTaskState>(convid);
                 if (state != null)
                 {
                     state.CancellationTokenSource.Cancel();
 
-                    var result = await _conversationsStates.TryDeleteAsync(e.ConversationId);
+                    var result = await _conversationsStates.TryDeleteAsync(convid);
                 }
             }
             catch (Exception exception)
@@ -156,7 +156,7 @@ namespace Witivio.JBot.Core
             }
         }
 
-        // TODO module
+        
         private async void ClientOnMessageReceivedOrNewConversation(object sender, NewMessageEventArgs e)
         {
             String mail;
@@ -230,7 +230,7 @@ namespace Witivio.JBot.Core
                 if (currentconv.Value != null && currentconv.Value.ConversationState != null && currentconv.Value.ConversationState.Date != null && (DateTime.UtcNow - currentconv.Value.ConversationState.Date).Duration() > TimeSpan.FromMinutes(1))
                 {
                     Debug.WriteLine("Close conversation " + currentconv.Value.ConversationState.From);
-                    ConvEnded(this, new ConversationEventArgs() {ConversationId = currentconv.Value.ConversationState.From });
+                    DeleteConvStore(currentconv.Value.ConversationState.From);
                 }
             }
         }
@@ -242,7 +242,8 @@ namespace Witivio.JBot.Core
                 await CheckAfkConversationAndDeleteItAsync();
             }
         }
-        
+        //TODO mettre status demarrage
+        //TODO methode httpget send msg to pidgin
         public async Task StartAsync()
         {
             try
@@ -250,7 +251,7 @@ namespace Witivio.JBot.Core
                 _jabberClient.StatusChanged += PersistantStatus;
                 _jabberClient.NewMessageOrNewConversation += ClientOnMessageReceivedOrNewConversation;
 
-                // _jabberClient.AskANewConversation += StartNewDirectLineConversation;
+                _jabberClient.AskANewConversation += StartNewDirectLineConversationAsync;
                 _jabberClient.ProactiveConversation += ProactiveConversation;
                 _jabberClient.Start();
                 _jabberClient.SetPresence(true);

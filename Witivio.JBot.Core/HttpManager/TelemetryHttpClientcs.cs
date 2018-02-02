@@ -9,8 +9,9 @@ using System.Threading;
 using Newtonsoft.Json;
 using Witivio.JBot.Core.Infrastructure;
 using Polly;
+using Witivio.JBot.Core.Services;
 
-namespace Witivio.JBot.Core.Services.HttpManager
+namespace Witivio.JBot.Core.HttpManager
 {
     public class ResilientHttpClient : IDisposable
     {

@@ -5,7 +5,7 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Witivio.JBot.Core.Services.HttpManager
+namespace Witivio.JBot.Core.HttpManager
 {
     public class HttpResult<T>
     {

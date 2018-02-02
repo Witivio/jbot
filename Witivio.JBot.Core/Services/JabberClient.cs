@@ -18,8 +18,7 @@ using Witivio.JBot.Core.Infrastructure;
 
 
 using Witivio.JBot.Core.Models.ProActive.Listener;
-//using Witivio.JBot.Core.Services.Botndo.S4Bot.Core.UCWA;
-using Witivio.JBot.Core.Services.HttpManager;
+using Witivio.JBot.Core.HttpManager;
 using System.Diagnostics;
 using Witivio.JBot.Core.Configuration;
 using Witivio.JBot.Core.Services.Configuration;
@@ -41,7 +40,7 @@ namespace Witivio.JBot.Core.Services
         Task PostAsync(string convId, string message, MessageFormat format = MessageFormat.Text);
         void SetPresence(bool isOnline);
         Task<string> StartNewConversation(ConversationParameters conversationParameters);
-        Task<Availability> GetPresence(string email);
+        Task<UserPresence> GetPresenceAsync(string email);
         Task IsTypingAsync(string key);
     }
 
@@ -55,18 +54,21 @@ namespace Witivio.JBot.Core.Services
 
 
         private IConfiguration _conf;
+        private IScheduler _keepALiveScheduler;
+        private IPersistantDataStore _userContactStatus;
         private ConcurrentDictionary<string, ProactiveConversation> proactiveConversationStack;
         private CancellationTokenSource _stopCancellationToken;
         private XmppServerCredential _credentials;
         private XmppClient _client;
         private IProactiveRequest _proactiveRequest;
+        private const int TIMER_CHECK_USER_TO_VIEW_STATUS_IN_ROSTER = 3;
 
-
-
-        public JabberClient(IXmppProvider xmppProvider, IConfiguration config, IProactiveRequest proactiveRequest)
+        public JabberClient(IXmppProvider xmppProvider, IConfiguration config, IProactiveRequest proactiveRequest, IScheduler keepALiveScheduler, IPersistantDataStore userContactSatus)
         {
             _conf = config;
             _credentials = xmppProvider.GetLog();
+            _userContactStatus = userContactSatus;
+            _keepALiveScheduler = keepALiveScheduler;
             try
             {
                 bool resbool;
@@ -85,15 +87,34 @@ namespace Witivio.JBot.Core.Services
                 Console.WriteLine(e.Message);
                 System.Environment.Exit(1);
             }
-
-            _client.ActivityChanged += _client_ActivityChanged;
             _client.ChatStateChanged += _client_ChatStateChanged;
             _client.StatusChanged += PersistantStatus;
             _client.Message += OnNewMessageReceived;
-
+            /*
+            _client.SubscriptionApproved += OnNewAccept;
+            _client.SubscriptionRefused += OnNewRefuse;
+            */
             _proactiveRequest = proactiveRequest;
             proactiveConversationStack = new ConcurrentDictionary<string, ProactiveConversation>();
         }
+        /*
+        private void OnNewRoster(object sender, RosterUpdatedEventArgs e)
+        {
+            if (e.Item.Jid.ToEmail() == "test3@tlsc.fr")
+                Debug.WriteLine("New contact");
+        }
+        private void OnNewAccept(object sender, SubscriptionApprovedEventArgs e)
+        {
+            if (e.Jid.ToEmail() == "test3@tlsc.fr")
+                Debug.WriteLine("New contact");
+        }
+        private void OnNewRefuse(object sender, SubscriptionRefusedEventArgs e)
+        {
+            if (e.Jid.ToEmail() == "test3@tlsc.fr")
+                Debug.WriteLine("New contact");
+        }
+        */
+
 
         private void _client_ChatStateChanged(object sender, S22.Xmpp.Extensions.ChatStateChangedEventArgs e)
         {
@@ -107,16 +128,28 @@ namespace Witivio.JBot.Core.Services
             //});
         }
 
-        private void _client_ActivityChanged(object sender, S22.Xmpp.Extensions.ActivityChangedEventArgs e)
+        private Task ApprovedContactToWatchStatusTask()
         {
-            _client.Im.ApproveSubscriptionRequest(e.Jid);
-            _client.Im.RequestSubscription(e.Jid);
+            while (true)
+            {
+                try
+                {
+                    Roster Contacts = _client.GetRoster();
+                    foreach (RosterItem currentitem in Contacts)
+                    {
+                        _client.Im.ApproveSubscriptionRequest(currentitem.Jid);
+                        _client.Im.RequestSubscription(currentitem.Jid);
+                    }
+                }
+                catch(Exception e)
+                { }
+            }
         }
 
         public void OnNewMessageReceived(object sender, S22.Xmpp.Im.MessageEventArgs e)
         {
-            _client.Im.ApproveSubscriptionRequest(e.Jid);
-            _client.Im.RequestSubscription(e.Jid);
+            AddContact(e.Message.From.Node, e.Message.From.Domain);
+            _client.Im.RequestSubscription(e.Message.From);
             NewMessageOrNewConversation?.Invoke(this, new NewMessageEventArgs
             {
                 From = new User
@@ -145,8 +178,18 @@ namespace Witivio.JBot.Core.Services
 
         public void PersistantStatus(object sender, StatusEventArgs e)
         {
-            if (e.Status.Availability != S22.Xmpp.Im.Availability.Online)
-                StatusChanged?.Invoke(this, e);
+            if (e.Jid.ToEmail() == _conf.Get<string>(ConfigurationKeys.Credentials.Account))
+            {
+                if (e.Status.Availability != S22.Xmpp.Im.Availability.Online)
+                    StatusChanged?.Invoke(this, e);
+            }
+            else
+            {
+                _userContactStatus.TryAddOrUpdateAsync(e.Jid.ToEmail() + "UserStatus", new UserPresenceClass
+                {
+                    userPresence = (UserPresence)e.Status.Availability
+                });
+            }
         }
 
         public Task Start()
@@ -165,6 +208,8 @@ namespace Witivio.JBot.Core.Services
             SetPresence(true);
             _stopCancellationToken = new CancellationTokenSource();
             //_eventTask = Task.Run(() => ListenEvents(), _stopCancellationToken.Token); // TODO check pour proactivité
+            _keepALiveScheduler.Start(ApprovedContactToWatchStatusTask, TimeSpan.FromSeconds(TIMER_CHECK_USER_TO_VIEW_STATUS_IN_ROSTER));
+
             return (Task.FromResult<object>(null));
         }
 
@@ -172,7 +217,8 @@ namespace Witivio.JBot.Core.Services
         {
             try
             {
-                _client.SendMessage(ToUser, message);
+                if (!String.IsNullOrEmpty(message))
+                    _client.SendMessage(ToUser, message);
             }
             catch (Exception e)
             {
@@ -186,11 +232,13 @@ namespace Witivio.JBot.Core.Services
             throw new System.NotImplementedException();
         }
 
-        public Task<Availability> GetPresence(string jid)
+        public async Task<UserPresence> GetPresenceAsync(string jidAccount)
         {
-            StatusEventArgs e = new StatusEventArgs(new S22.Xmpp.Jid(jid), null);
-
-            return (Task.FromResult(e.Status.Availability));
+            UserPresenceClass res = await _userContactStatus.GetValueAsync<UserPresenceClass>(jidAccount + "UserStatus");
+            if (res != null)
+                return (res.userPresence);
+            else
+                return (UserPresence.None);
         }
 
         public void SetPresence(bool isOnline)
@@ -200,7 +248,7 @@ namespace Witivio.JBot.Core.Services
             else
                 _client.SetStatus(S22.Xmpp.Im.Availability.Offline);
         }
-        // TODO PROACTIVITY
+
         public async Task<string> StartNewConversation(ConversationParameters conversationParameters)
         {
             if (conversationParameters == null) throw new ArgumentNullException(nameof(conversationParameters));
@@ -209,22 +257,21 @@ namespace Witivio.JBot.Core.Services
                 if (!conversationParameters.IsGroup.GetValueOrDefault())
                 {
                     string to = conversationParameters.Members.First().Id;
-                    var presence = await this.GetPresence(to);
-                    if (presence == S22.Xmpp.Im.Availability.Online || presence == S22.Xmpp.Im.Availability.ExtendedAway || presence == S22.Xmpp.Im.Availability.Chat)
+                    var presence = await this.GetPresenceAsync(to);
+                    if (presence == UserPresence.Online || presence == UserPresence.ExtendedAway || presence == UserPresence.Away || presence == UserPresence.Chat)
                     {
                         if (string.IsNullOrEmpty(conversationParameters.Activity.Id))
                             conversationParameters.Activity.Id = Guid.NewGuid().ToString();
 
                         var directLineConversation = await this.AskANewConversation?.Invoke();
                         proactiveConversationStack.TryAdd(conversationParameters.Activity.Id, new ProactiveConversation { Activity = conversationParameters.Activity, DirectLineConversation = directLineConversation });
-                        //await _communicator.StartMessaging(to, conversationParameters.Activity.Id);
-                        /* JBNewMessage(this, new S22.Xmpp.Im.MessageEventArgs(_client.Jid, message) { }); */
-                        // TODO check if good
                         return directLineConversation.ConversationId;
                     }
+                    else
+                        throw new NotSupportedException("User is not online");
                 }
                 throw new NotSupportedException("Group message is not supported yet");
-            }
+           }
             throw new ArgumentNullException("conversationParameters.Members");
         }
 

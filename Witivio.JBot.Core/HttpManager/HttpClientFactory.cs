@@ -10,7 +10,7 @@ using Newtonsoft.Json;
 using Polly;
 using Witivio.JBot.Core.Models;
 
-namespace Witivio.JBot.Core.Services.HttpManager
+namespace Witivio.JBot.Core.HttpManager
 {
     public interface IHttpClientFactory
     {

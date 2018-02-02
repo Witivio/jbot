@@ -71,8 +71,9 @@
   <ItemGroup>
     <Compile Include="CommunicationLinker.cs" />
     <Compile Include="DependencyModule\JabberModule.cs" />
-    <Compile Include="Infrastructure\Configuration.cs" />
-    <Compile Include="Infrastructure\ConfigurationKeys.cs" />
+    <Compile Include="Configuration\Configuration.cs" />
+    <Compile Include="Configuration\ConfigurationKeys.cs" />
+    <Compile Include="ExceptionManager\StartNewConversationException.cs" />
     <Compile Include="Infrastructure\Extensions.cs" />
     <Compile Include="Infrastructure\IRuntimeModeEnvironment.cs" />
     <Compile Include="Infrastructure\RetryPolicies.cs" />
@@ -106,13 +107,14 @@
     <Compile Include="Models\ProActive\ProActiveMessageResultcs.cs" />
     <Compile Include="Models\Settings.cs" />
     <Compile Include="Models\UserPresence.cs" />
+    <Compile Include="Proactivity\ConversationController.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Infrastructure\BotIdProvider.cs" />
-    <Compile Include="Services\Configuration\XmppProvider.cs" />
+    <Compile Include="Configuration\XmppProvider.cs" />
     <Compile Include="Services\Data\ReceiveToDeleteEventArgs.cs" />
     <Compile Include="Services\Data\ReceiveToSaveEventArgs.cs" />
-    <Compile Include="Services\HttpManager\HttpClientFactory.cs" />
-    <Compile Include="Services\HttpManager\HttpResult.cs" />
+    <Compile Include="HttpManager\HttpClientFactory.cs" />
+    <Compile Include="HttpManager\HttpResult.cs" />
     <Compile Include="Services\Conversation\JbotConversationId.cs" />
     <Compile Include="Services\Domain.cs" />
     <Compile Include="Services\EventArgs\ConversationEventArgs.cs" />
@@ -123,8 +125,8 @@
     <Compile Include="Services\EventProcessor.cs" />
     <Compile Include="Services\Formater\MessageFormatter.cs" />
     <Compile Include="Services\HtmlHelpers.cs" />
-    <Compile Include="Services\HttpManager\ProactiveRequest.cs" />
-    <Compile Include="Services\HttpManager\TelemetryHttpClientcs.cs" />
+    <Compile Include="HttpManager\ProactiveRequest.cs" />
+    <Compile Include="HttpManager\TelemetryHttpClientcs.cs" />
     <Compile Include="Services\JabberClient.cs" />
     <Compile Include="Services\JBConversationId.cs" />
     <Compile Include="Services\MediaTypeNames.cs" />

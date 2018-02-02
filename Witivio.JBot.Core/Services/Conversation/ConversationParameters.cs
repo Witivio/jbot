@@ -67,8 +67,7 @@ namespace Witivio.JBot.Core.Services
 
     /*
 
-
-    namespace Botndo.S4Bot.Core.Conversations
+   namespace Botndo.S4Bot.Core.Conversations
     {
         public class ConversationParameters
         {
