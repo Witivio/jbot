@@ -6,7 +6,7 @@ using Witivio.JBot.Core.Services;
 
 namespace Witivio.JBot.Core.Models
 {
-    public class XmppServerCredential : IAuth
+    public class XmppServerCredential
     {
         [JsonProperty("Account")]
         public String Account { get; set; } = "admin@127.0.0.1";
