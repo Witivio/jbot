@@ -22,6 +22,7 @@ using Witivio.JBot.Core.HttpManager;
 using System.Diagnostics;
 using Witivio.JBot.Core.Configuration;
 using Witivio.JBot.Core.Services.Configuration;
+using S22.Xmpp.Extensions;
 
 namespace Witivio.JBot.Core.Services
 {
@@ -90,32 +91,23 @@ namespace Witivio.JBot.Core.Services
             _client.ChatStateChanged += _client_ChatStateChanged;
             _client.StatusChanged += PersistantStatus;
             _client.Message += OnNewMessageReceived;
-            /*
-            _client.SubscriptionApproved += OnNewAccept;
-            _client.SubscriptionRefused += OnNewRefuse;
-            */
+            _client.Im.SubscriptionRequestFromUnKnownUser += OnNewContact;
+
             _proactiveRequest = proactiveRequest;
             proactiveConversationStack = new ConcurrentDictionary<string, ProactiveConversation>();
         }
-        /*
-        private void OnNewRoster(object sender, RosterUpdatedEventArgs e)
-        {
-            if (e.Item.Jid.ToEmail() == "test3@tlsc.fr")
-                Debug.WriteLine("New contact");
-        }
-        private void OnNewAccept(object sender, SubscriptionApprovedEventArgs e)
-        {
-            if (e.Jid.ToEmail() == "test3@tlsc.fr")
-                Debug.WriteLine("New contact");
-        }
-        private void OnNewRefuse(object sender, SubscriptionRefusedEventArgs e)
-        {
-            if (e.Jid.ToEmail() == "test3@tlsc.fr")
-                Debug.WriteLine("New contact");
-        }
-        */
 
-
+        private void OnNewContact(object sender, SubscriptionRequestFromUnKnownUserEventArgs e)
+        {
+            try
+            {
+                AddContact(e.Jid.Node, e.Jid.Domain);
+                _client.Im.RequestSubscription(e.Jid);
+            }
+            catch(Exception ex)
+            {}
+        }
+        
         private void _client_ChatStateChanged(object sender, S22.Xmpp.Extensions.ChatStateChangedEventArgs e)
         {
             Debug.WriteLine("State: " + e.ChatState + " " +  e.Jid.GetBareJid() + " " + DateTime.UtcNow);
